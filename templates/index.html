@@ -4,227 +4,201 @@
     <title>Kodi Recorder</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="bootstrap-icons/font/bootstrap-icons.css">
-    <link rel="stylesheet" type="text/css" href="spinkit/spinkit.min.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="recorder.css">
-    <script src="bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="smoothscroll-polyfill/dist/smoothscroll.min.js"></script>
-    <script src="jquery/dist/jquery.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <style>
+        /* Loading spinner */
+        .loading-animation div {
+            box-sizing: border-box;
+            display: block;
+            position: absolute;
+            width: 6rem;
+            height: 6rem;
+            margin: 3rem;
+            border: 8px solid #fff;
+            border-radius: 50%;
+            animation: loading-animation 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            border-color: #fff transparent transparent transparent;
+        }
+
+        .loading-animation div:nth-child(1) {
+            animation-delay: -0.45s;
+        }
+
+        .loading-animation div:nth-child(2) {
+            animation-delay: -0.3s;
+        }
+
+        .loading-animation div:nth-child(3) {
+            animation-delay: -0.15s;
+        }
+
+        @keyframes loading-animation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Download button animation */
+        @keyframes show-result {
+            0% {
+                opacity: 0;
+                transform: scale(1) rotate(-4deg);
+            }
+            80% {
+                opacity: 0.8;
+                transform: scale(1.15) rotate(0deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .show-result {
+            animation-name: show-result;
+            animation-duration: 0.5s;
+            animation-timing-function: ease-in-out;
+            animation-fill-mode: forwards;
+        }
+    </style>
+</head>
+<body class="flex justify-center bg-slate-950 p-5">
+    <div class="flex flex-col">
+        <h1 class="text-4xl text-white text-center mb-5">Kodi Recorder</h1>
+
+        <!-- Now playing info -->
+        <div id="stream-info" class="bg-zinc-800 text-zinc-200 rounded-xl text-center mx-auto py-4 px-8 shadow-md">
+            <h1 id="playing-now" class="text-lg">Playing Now:</h1>
+            <h1 id="episode-playing" class="text-3xl font-bold mt-2">Nothing</h1>
+            <h3 id="episode-details" class="text-md mt-2">Season 1 Episode 1</h3>
+        </div>
+
+        <!-- Record button -->
+        <div id="record-button" class="bg-slate-950 text-zinc-200 select-none rounded-full relative mx-auto mt-10 w-52 h-52 border-2 border-white transition-all duration-500">
+            <h1 id="record-button-text" class="absolute inset-0 flex items-center justify-center text-3xl font-medium opacity-100 transition-opacity">Record</h1>
+            <div id="spinner" class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity loading-animation"><div></div><div></div><div></div><div></div></div>
+        </div>
+
+        <!-- Download button -->
+        <!-- Hidden on load with pointer-events-none opacity-0 -->
+        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg text-center mt-10 mx-auto p-8 shadow-md pointer-events-none opacity-0 transition-all duration-500">
+            <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-4 text-xl font-semibold rounded-lg">Download</a>
+            <label for="filename-input" class="text-md mb-1"><b>Change filename (optional):</b></label>
+            <div class="flex">
+                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-300 rounded-l-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
+                <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="edit_filename(this);"><i class="bi-pencil leading-none"></i></button>
+            </div>
+        </div>
+    </div>
     <script>
-        function get_random_filename() {
-            random_filename = Math.random().toString(16).substr(2, 16);
+        // Now playing elements
+        const stream_info = document.getElementById("stream-info");
+        const playing_now_label = document.getElementById("playing-now");
+        const episode_playing = document.getElementById("episode-playing");
+        const episode_details = document.getElementById("episode-details");
+
+        // Record button elements
+        const record_button = document.getElementById("record-button");
+        const record_text = document.getElementById("record-button-text");
+        const record_spinner = document.getElementById("spinner");
+
+        // Download button elements
+        const download_div = document.getElementById("result");
+        const download_button = document.getElementById("download-button");
+        const rename_input = document.getElementById("rename-input");
+        const rename_button = document.getElementById("rename-button");
+
+        // Recording vars
+        var recording = false;
+        var start_time = "";
+
+        // Update playing now info every 5 seconds
+        async function update_playing_now() {
+            if (! recording) {
+                var result = await fetch('/get_playing_now');
+                result = await result.json();
+                episode_playing.innerHTML = result["title"];
+                episode_details.innerHTML = result["subtext"];
+            };
+        };
+        update_playing_now();
+        setInterval(update_playing_now, 5000);
+
+        async function startRecording() {
+            console.log("Start recording");
+            // Change background to red
+            record_button.classList.remove("bg-slate-950");
+            record_button.classList.add("bg-red-600", "scale-110");
+
+            // Prevent changing playing_now contents
+            recording = true;
+
+            // Get start timestamp
+            var result = await fetch(`/get_playtime`);
+            starttime = await result.json();
+
+            // Hide download button if visible from previous run
+            download_div.classList.add("opacity-0", "pointer-events-none")
+            download_div.classList.remove("show-result")
         };
 
-        async function generateFile(){
-            // Get random 16 char filename
-            get_random_filename();
+        async function stopRecording() {
+            console.log("Stop recording");
+            // Change background back
+            record_button.classList.remove("bg-red-600", "scale-110");
+            record_button.classList.add("bg-slate-950");
 
-            // Build request body
-            data = {"startTime": starttime, "filename": random_filename};
-            console.log(data);
+            // Show loading spinner
+            record_text.classList.remove("opacity-100");
+            record_text.classList.add("opacity-0");
+            record_spinner.classList.remove("opacity-0");
+            record_spinner.classList.add("opacity-100");
 
-            // Send request
+            // Send request to backend, show download button when finished
+            console.log("Calling generateFile");
+            await generateFile();
+            console.log("generateFile finished");
+
+            // Stop loading animation
+            record_text.classList.remove("opacity-0");
+            record_text.classList.add("opacity-100");
+            record_spinner.classList.remove("opacity-100");
+            record_spinner.classList.add("opacity-0");
+        };
+
+        async function generateFile() {
+            console.log("generateFile called");
             let response = await fetch('/submit', {
                 method: 'POST',
-                body: JSON.stringify(data),
+                body: JSON.stringify({"startTime": starttime}),
                 headers: {
                     'Accept': 'application/json, text/plain, */*',
                     'Content-Type': 'application/json'
                 }
             });
 
-            return response;
+            // Add link to download button
+            const filename = await response.json();
+            download_button.href = `download/${filename}`;
+            console.log(filename);
+
+            // Show download button, scroll into view if needed
+            download_div.classList.remove("opacity-0", "pointer-events-none");
+            download_div.classList.add("show-result");
+            download_div.scrollIntoView({behavior: "smooth"});
         };
-    </script>
-</head>
-<body>
-    <script>
-        // Check if user is in dark mode, change theme (runs once on page load)
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.body.classList.add("dark");
-            console.log("Dark mode");
-        };
-    </script>
-
-    <div class="container d-flex flex-column vh-100" style="overflow-x:hidden;">
-
-        <!-- Now playing info -->
-        <div id="stream-info" class="text-center p-3 mx-auto stream-info">
-            <label id="playing-now-label">Playing Now:</label>
-            <p class="h3 mt-3 mb-0" id="episode-playing">Connection Error</p>
-            <p><small id="episode-playing-details"></small></p>
-        </div>
-
-        <!-- Record button -->
-        <div class="text-center mt-4">
-            <div class="record-button" id="record-button">
-                <h3 id="record-button-text" class="record-button-text">Record</h3>
-                <div id="spinner" class="loading-animation loading-animation-show" style="display:none;"><div></div><div></div><div></div><div></div></div>
-            </div></br>
-        </div>
-
-        <!-- Download button -->
-        <div id="result" class="text-center mx-auto mb-3 stream-info" style="visibility: hidden;">
-            <a class="btn btn-success btn-lg my-3" role="button" id="download-button" href="">Download</a></br>
-        </div>
-
-    <script>
-        var recording = false;
-        starttime = ""
-        stoptime = ""
-
-        // Update episode title, show name, season num, episode num
-        async function update_playing_now() {
-            if (! recording) {
-                var result = await fetch('/get_playing_now');
-                result = await result.json();
-                document.getElementById("episode-playing").innerHTML = result["title"];
-                document.getElementById("episode-playing-details").innerHTML = result["subtext"];
-            };
-        };
-        update_playing_now();
-
-        // Update currently playing info + available instances 5 seconds
-        function monitor_playing_now(start) {
-            if (start) {
-                statusTimer = setInterval(update_playing_now, 5000);
-            } else {
-                clearInterval(statusTimer);
-            };
-        };
-        monitor_playing_now(true);
 
         // Button press listeners
-        document.getElementById("record-button").addEventListener('mousedown', startRecording);
-        document.getElementById("record-button").addEventListener('touchstart', startRecording);
+        record_button.addEventListener('mousedown', startRecording);
+        record_button.addEventListener('touchstart', startRecording);
 
         // Button release listeners
-        document.getElementById("record-button").addEventListener('mouseup', finishRecording);
-        document.getElementById("record-button").addEventListener('touchend', finishRecording);
-
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        };
-
-        // True for start recording, false for stop
-        async function infoTransition(direction) {
-            if (direction) {
-                document.getElementById("stream-info").classList.add("fade-out");
-                await sleep(100);
-
-                document.getElementById("playing-now-label").style.visibility = "hidden";
-                document.getElementById("episode-playing").dataset.label = document.getElementById("episode-playing").innerHTML;
-                document.getElementById("episode-playing").innerHTML = "Hold until done";
-                document.getElementById("episode-playing-details").style.visibility = "hidden";
-
-                document.getElementById("stream-info").classList.remove("fade-out");
-                document.getElementById("stream-info").classList.add("fade-in");
-            } else {
-                document.getElementById("stream-info").classList.add("fade-out");
-                await sleep(100);
-
-                // Revert playing now contents
-                document.getElementById("playing-now-label").style.visibility = "initial";
-                document.getElementById("episode-playing").innerHTML = document.getElementById("episode-playing").dataset.label;
-                document.getElementById("episode-playing-details").style.visibility = "initial";
-
-                document.getElementById("stream-info").classList.remove("fade-out");
-                document.getElementById("stream-info").classList.add("fade-in");
-
-                await sleep(500);
-                // Allow now playing contents to update again
-                recording = false;
-            };
-        };
-
-        async function startRecording() {
-            console.log("Click start");
-
-            // Prevent now playing contents from updating until done
-            recording = true;
-
-            // Fade record button on
-            document.getElementById("record-button").classList.remove("toggle-off");
-            document.getElementById("record-button").classList.add("toggle-on");
-
-            // Replace playing now contents with instructions
-            infoTransition(true);
-
-            // Get starting timestamp
-            var result = await fetch(`/get_playtime`);
-            starttime = await result.json();
-            console.log(starttime)
-
-            // Hide download button if visible from previous
-            document.getElementById("result").classList.add("hide-result");
-        };
-
-        // Apply fade animations when switching between "Record" text and loading spinner
-        async function record_button_transition(animation) {
-            if (animation) {
-                // Disable while generating clip
-                document.getElementById("record-button").disabled = true;
-
-                // Fade out "Record" text
-                document.getElementById("record-button-text").classList.remove("fade-in");
-                document.getElementById("record-button-text").classList.add("fade-out");
-                await sleep(100);
-
-                // Fade in loading animation
-                document.getElementById("spinner").classList.remove("loading-animation-hide");
-                document.getElementById("spinner").classList.add("loading-animation-show");
-                document.getElementById("record-button-text").style.display = "none";
-                document.getElementById("spinner").style.display = "block";
-            } else {
-                // Fade out loading animation
-                document.getElementById("spinner").classList.remove("loading-animation-show");
-                document.getElementById("spinner").classList.add("loading-animation-hide");
-                await sleep(200);
-
-                // Fade in "Record" text
-                document.getElementById("record-button-text").classList.remove("fade-out");
-                document.getElementById("record-button-text").classList.add("fade-in");
-                document.getElementById("spinner").style.display = "none"
-                document.getElementById("record-button-text").style.display = "block";
-
-                // Re-enable button
-                document.getElementById("record-button").disabled = false;
-            };
-        };
-
-        async function finishRecording() {
-            document.getElementById("record-button").classList.remove("toggle-on");
-            document.getElementById("record-button").classList.add("toggle-off");
-            infoTransition(false);
-            record_button_transition(true);
-
-            // Submit timestamps, wait until file has been generated
-            var output = await generateFile();
-            output = await output.json()
-            console.log(output);
-
-            // Show download button
-            document.getElementById('download-button').href = `download/${output}`;
-            document.getElementById("result").classList.remove("hide-result");
-            document.getElementById("result").classList.add("show-result");
-
-            // Scroll down to hide header
-            document.getElementById("result").scrollIntoView({behavior: "smooth"});
-
-            // Re-enable record button, remove loading animation
-            record_button_transition(false);
-        };
-
-        // Listen for system theme changes, switch to dark/light mode to reflect (responsive)
-        window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
-            if (e.matches) { // Returns True for dark mode, False otherwise
-                document.body.classList.add("dark");
-            } else {
-                document.body.classList.remove("dark");
-            };
-        });
+        record_button.addEventListener('mouseup', stopRecording);
+        record_button.addEventListener('touchend', stopRecording);
     </script>
 </body>
 </html>

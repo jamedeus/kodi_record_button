@@ -2,6 +2,8 @@ import os
 import re
 import xbmc
 import ffmpeg
+import string
+import random
 import xbmcgui
 import xbmcaddon
 from flask import Flask, request, render_template, jsonify, send_from_directory
@@ -59,15 +61,12 @@ def submit():
     # Get stop time immediately
     stop_time = player.getTime()
 
+    # Parse post body, calculcate clip duration
     data = request.get_json()
     duration = stop_time - float(data["startTime"])
 
-    # Get user-set filename (or random 16 char string if user left blank)
-    filename = re.sub(r'[^A-Za-z0-9\s._-]', '', data["filename"])
-
-    # Remove extension if present (prevents double extension)
-    if filename.endswith(".mp4"):
-        filename = filename[:-4]
+    # Generate random 16 char string
+    filename = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
 
     # Generate
     gen_mp4(player.getPlayingFile(), data["startTime"], str(duration), filename)
