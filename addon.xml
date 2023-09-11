@@ -21,4 +21,5 @@
 			<screenshot>resources/screenshot-01.jpg</screenshot>
 		</assets>
 	</extension>
+	<extension point="xbmc.service" library="addon.py" start="login"/>
 </addon>
