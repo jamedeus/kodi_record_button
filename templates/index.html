@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Kodi Recorder</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" type="text/css" href="spinkit/spinkit.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="recorder.css">
+    <script src="bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="smoothscroll-polyfill/dist/smoothscroll.min.js"></script>
+    <script src="jquery/dist/jquery.min.js"></script>
+    <script>
+        function get_random_filename() {
+            random_filename = Math.random().toString(16).substr(2, 16);
+        };
+
+        async function generateFile(){
+            // Get random 16 char filename
+            get_random_filename();
+
+            // Build request body
+            data = {"startTime": starttime, "filename": random_filename};
+            console.log(data);
+
+            // Send request
+            let response = await fetch('/submit', {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: {
+                    'Accept': 'application/json, text/plain, */*',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            return response;
+        };
+    </script>
+</head>
+<body>
+    <script>
+        // Check if user is in dark mode, change theme (runs once on page load)
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.classList.add("dark");
+            console.log("Dark mode");
+        };
+    </script>
+
+    <div class="container d-flex flex-column vh-100" style="overflow-x:hidden;">
+
+        <!-- Now playing info -->
+        <div id="stream-info" class="text-center p-3 mx-auto stream-info">
+            <label id="playing-now-label">Playing Now:</label>
+            <p class="h3 mt-3 mb-0" id="episode-playing">Connection Error</p>
+            <p><small id="episode-playing-details"></small></p>
+        </div>
+
+        <!-- Record button -->
+        <div class="text-center mt-4">
+            <div class="record-button" id="record-button">
+                <h3 id="record-button-text" class="record-button-text">Record</h3>
+                <div id="spinner" class="loading-animation loading-animation-show" style="display:none;"><div></div><div></div><div></div><div></div></div>
+            </div></br>
+        </div>
+
+        <!-- Download button -->
+        <div id="result" class="text-center mx-auto mb-3 stream-info" style="visibility: hidden;">
+            <a class="btn btn-success btn-lg my-3" role="button" id="download-button" href="">Download</a></br>
+        </div>
+
+    <script>
+        var recording = false;
+        starttime = ""
+        stoptime = ""
+
+        // Update episode title, show name, season num, episode num
+        async function update_playing_now() {
+            if (! recording) {
+                var result = await fetch('/get_playing_now');
+                result = await result.json();
+                document.getElementById("episode-playing").innerHTML = result["title"];
+                document.getElementById("episode-playing-details").innerHTML = result["subtext"];
+            };
+        };
+        update_playing_now();
+
+        // Update currently playing info + available instances 5 seconds
+        function monitor_playing_now(start) {
+            if (start) {
+                statusTimer = setInterval(update_playing_now, 5000);
+            } else {
+                clearInterval(statusTimer);
+            };
+        };
+        monitor_playing_now(true);
+
+        // Button press listeners
+        document.getElementById("record-button").addEventListener('mousedown', startRecording);
+        document.getElementById("record-button").addEventListener('touchstart', startRecording);
+
+        // Button release listeners
+        document.getElementById("record-button").addEventListener('mouseup', finishRecording);
+        document.getElementById("record-button").addEventListener('touchend', finishRecording);
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        };
+
+        // True for start recording, false for stop
+        async function infoTransition(direction) {
+            if (direction) {
+                document.getElementById("stream-info").classList.add("fade-out");
+                await sleep(100);
+
+                document.getElementById("playing-now-label").style.visibility = "hidden";
+                document.getElementById("episode-playing").dataset.label = document.getElementById("episode-playing").innerHTML;
+                document.getElementById("episode-playing").innerHTML = "Hold until done";
+                document.getElementById("episode-playing-details").style.visibility = "hidden";
+
+                document.getElementById("stream-info").classList.remove("fade-out");
+                document.getElementById("stream-info").classList.add("fade-in");
+            } else {
+                document.getElementById("stream-info").classList.add("fade-out");
+                await sleep(100);
+
+                // Revert playing now contents
+                document.getElementById("playing-now-label").style.visibility = "initial";
+                document.getElementById("episode-playing").innerHTML = document.getElementById("episode-playing").dataset.label;
+                document.getElementById("episode-playing-details").style.visibility = "initial";
+
+                document.getElementById("stream-info").classList.remove("fade-out");
+                document.getElementById("stream-info").classList.add("fade-in");
+
+                await sleep(500);
+                // Allow now playing contents to update again
+                recording = false;
+            };
+        };
+
+        async function startRecording() {
+            console.log("Click start");
+
+            // Prevent now playing contents from updating until done
+            recording = true;
+
+            // Fade record button on
+            document.getElementById("record-button").classList.remove("toggle-off");
+            document.getElementById("record-button").classList.add("toggle-on");
+
+            // Replace playing now contents with instructions
+            infoTransition(true);
+
+            // Get starting timestamp
+            var result = await fetch(`/get_playtime`);
+            starttime = await result.json();
+            console.log(starttime)
+
+            // Hide download button if visible from previous
+            document.getElementById("result").classList.add("hide-result");
+        };
+
+        // Apply fade animations when switching between "Record" text and loading spinner
+        async function record_button_transition(animation) {
+            if (animation) {
+                // Disable while generating clip
+                document.getElementById("record-button").disabled = true;
+
+                // Fade out "Record" text
+                document.getElementById("record-button-text").classList.remove("fade-in");
+                document.getElementById("record-button-text").classList.add("fade-out");
+                await sleep(100);
+
+                // Fade in loading animation
+                document.getElementById("spinner").classList.remove("loading-animation-hide");
+                document.getElementById("spinner").classList.add("loading-animation-show");
+                document.getElementById("record-button-text").style.display = "none";
+                document.getElementById("spinner").style.display = "block";
+            } else {
+                // Fade out loading animation
+                document.getElementById("spinner").classList.remove("loading-animation-show");
+                document.getElementById("spinner").classList.add("loading-animation-hide");
+                await sleep(200);
+
+                // Fade in "Record" text
+                document.getElementById("record-button-text").classList.remove("fade-out");
+                document.getElementById("record-button-text").classList.add("fade-in");
+                document.getElementById("spinner").style.display = "none"
+                document.getElementById("record-button-text").style.display = "block";
+
+                // Re-enable button
+                document.getElementById("record-button").disabled = false;
+            };
+        };
+
+        async function finishRecording() {
+            document.getElementById("record-button").classList.remove("toggle-on");
+            document.getElementById("record-button").classList.add("toggle-off");
+            infoTransition(false);
+            record_button_transition(true);
+
+            // Submit timestamps, wait until file has been generated
+            var output = await generateFile();
+            output = await output.json()
+            console.log(output);
+
+            // Show download button
+            document.getElementById('download-button').href = `download/${output}`;
+            document.getElementById("result").classList.remove("hide-result");
+            document.getElementById("result").classList.add("show-result");
+
+            // Scroll down to hide header
+            document.getElementById("result").scrollIntoView({behavior: "smooth"});
+
+            // Re-enable record button, remove loading animation
+            record_button_transition(false);
+        };
+
+        // Listen for system theme changes, switch to dark/light mode to reflect (responsive)
+        window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+            if (e.matches) { // Returns True for dark mode, False otherwise
+                document.body.classList.add("dark");
+            } else {
+                document.body.classList.remove("dark");
+            };
+        });
+    </script>
+</body>
+</html>

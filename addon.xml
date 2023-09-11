@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.record.button" name="Record Button" version="1.0.0" provider-name="Josh Medeiros">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0"/>
+	</requires>
+	<extension point="xbmc.python.script" library="addon.py">
+		<provides>executable</provides>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<platform>all</platform>
+		<summary lang="en">Record Button webapp</summary>
+		<description lang="en">Serve a webapp with a record button to generate clips</description>
+		<license>GNU General Public License, v2</license>
+		<language></language>
+		<source>https://gitlab.com/jamedeus/kodi_record_button</source>
+		<website>Kodi.tv</website>
+		<email>josh.a.medeiros@gmail.com</email>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+			<screenshot>resources/screenshot-01.jpg</screenshot>
+		</assets>
+	</extension>
+</addon>
