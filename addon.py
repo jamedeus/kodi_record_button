@@ -101,6 +101,11 @@ def download(filename):
     return send_from_directory('/var/tmp/kodi_addon_test', filename, as_attachment=True)
 
 
+@app.route('/get_history')
+def get_history():
+    return jsonify(load_history())
+
+
 # Returns current timestamp, used as key in history file
 def get_timestamp():
     return datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')

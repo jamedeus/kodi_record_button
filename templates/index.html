@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         /* Loading spinner */
         .loading-animation div {
@@ -66,7 +67,7 @@
         }
     </style>
 </head>
-<body class="flex justify-center bg-slate-950 p-5">
+<body class="flex justify-center min-h-screen bg-slate-950 p-5">
     <div class="flex flex-col">
         <h1 class="text-4xl text-white text-center mb-5">Kodi Recorder</h1>
 
@@ -85,12 +86,34 @@
 
         <!-- Download button -->
         <!-- Hidden on load with pointer-events-none opacity-0 -->
-        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg text-center mt-10 mx-auto p-8 shadow-md pointer-events-none opacity-0 transition-all duration-500">
+        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg text-center mt-10 mb-5 mx-auto p-8 shadow-md pointer-events-none opacity-0 transition-all duration-500">
             <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-4 text-xl font-semibold rounded-lg">Download</a>
             <label for="filename-input" class="text-md mb-1"><b>Change filename (optional):</b></label>
             <div class="flex">
                 <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-300 rounded-l-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
                 <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="edit_filename(this);"><i class="bi-pencil leading-none"></i></button>
+            </div>
+        </div>
+
+        <!-- History button -->
+        <div class="mt-auto flex">
+            <button id="history-button" class="mx-auto bg-zinc-500 py-2 px-3 rounded-lg text-white font-bold" onclick="open_history_menu(true);">History</button>
+        </div>
+
+        <!-- History menu (hidden) -->
+        <div id="history-menu" class="fixed flex flex-col bottom-0 left-0 right-0 h-[80%] bg-zinc-700 rounded-t-2xl mx-5 transform translate-y-full transition-transform duration-500 ease-in-out overflow-y-auto">
+            <!-- Header -->
+            <div class="flex py-3 mb-3">
+                <div class="ms-3 me-auto w-8 h-8"></div>
+                <h1 class="text-white text-2xl font-bold m-auto">History</h1>
+                <!-- Close button -->
+                <button id="history-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-white text-xl flex" onclick="open_history_menu(false);">
+                    <i class="fas fa-times m-auto"></i>
+                </button>
+            </div>
+
+            <!-- Contents -->
+            <div id="history-contents" class="flex flex-col mx-auto max-w-[80%] text-center">
             </div>
         </div>
     </div>
@@ -111,6 +134,12 @@
         const download_button = document.getElementById("download-button");
         const rename_input = document.getElementById("rename-input");
         const rename_button = document.getElementById("rename-button");
+
+        // History menu elements
+        const history_button = document.getElementById('history-button');
+        const history_menu = document.getElementById('history-menu');
+        const history_contents = document.getElementById('history-contents');
+        const history_close = document.getElementById('history-close');
 
         // Recording vars
         var recording = false;
@@ -190,15 +219,70 @@
             download_div.classList.remove("opacity-0", "pointer-events-none");
             download_div.classList.add("show-result");
             download_div.scrollIntoView({behavior: "smooth"});
+
+            // Reload history menu contents
+            load_history();
         };
 
-        // Button press listeners
+        // Start recording listeners
         record_button.addEventListener('mousedown', startRecording);
         record_button.addEventListener('touchstart', startRecording);
 
-        // Button release listeners
+        // Stop recording listeners
         record_button.addEventListener('mouseup', stopRecording);
         record_button.addEventListener('touchend', stopRecording);
+
+        // Takes bool, opens if true, closes if false
+        function open_history_menu(state) {
+            if (state) {
+                history_menu.style.transform = 'translateY(0)';
+            } else {
+                history_menu.style.transform = 'translateY(100%)';
+            };
+        };
+
+        // Close history menu when user clicks outside div
+        document.addEventListener('click', function(event) {
+            if (!history_menu.contains(event.target) && !history_button.contains(event.target)) {
+                open_history_menu(false);
+            }
+        });
+
+        // Request history from backend and add card to history menu for each file
+        async function load_history() {
+            // Clear old contents if present
+            history_contents.innerHTML = '';
+
+            // Request new contents
+            let history_json = await fetch('/get_history');
+            history_json = await history_json.json();
+
+            // Add div for each item in JSON
+            for (const [timestamp, details] of Object.entries(history_json)) {
+                history_contents.insertAdjacentHTML('beforeend',
+                `<div class="bg-slate-950 rounded-xl p-5 text-white mb-3">
+                    <h1 class="text-lg font-semibold">${details.output}</h1>
+                    <h1 class="text-md text-zinc-500">${new Date(timestamp.replace(/_/g, ' ')).toLocaleString()}</h1>
+                    <div class="flex mt-3">
+                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white ms-auto" href="download/${details.output}">
+                            <i class="fas fa-file-download m-auto"></i>
+                        </a>
+                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white mx-3" href="edit/${details.output}">
+                            <i class="fas fa-pencil-alt m-auto"></i>
+                        </a>
+                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white me-auto" href="delete/${details.output}">
+                            <i class="fas fa-trash-alt m-auto"></i>
+                        </a>
+                    </div>
+                </div>
+                `);
+            };
+        };
+
+        // Populate history menu on page load
+        document.addEventListener("DOMContentLoaded", function() {
+            load_history();
+        });
     </script>
 </body>
 </html>
