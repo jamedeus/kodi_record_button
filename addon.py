@@ -1,25 +1,25 @@
 import os
-import re
 import xbmc
-import ffmpeg
+import json
 import string
+import ffmpeg
 import random
-import xbmcgui
+import xbmcvfs
+import datetime
 import xbmcaddon
 from flask import Flask, request, render_template, jsonify, send_from_directory
-
  
-addon       = xbmcaddon.Addon()
-addonname   = addon.getAddonInfo('name')
-
 # Read currently-playing info
 player = xbmc.Player()
 
-# Set a string variable to use 
-#line1 = "Hello World! We can write anything we want here Using Python"
+# Get path to addon_data dir, history file
+addon = xbmcaddon.Addon()
+profile_path = addon.getAddonInfo('profile')
+history_path = os.path.join(profile_path, 'history.json')
 
-## Launch a dialog box in kodi showing the string variable 'line1' as the contents
-#xbmcgui.Dialog().ok(addonname, line1)
+# Create addon_data dir if doesn't exist
+if not xbmcvfs.exists(profile_path):
+    xbmcvfs.mkdir(profile_path)
 
 
 app = Flask(__name__, static_url_path='', static_folder='node_modules')
@@ -92,10 +92,45 @@ def gen_mp4(source, start_time, duration, filename):
         ac="2"
     ).run(overwrite_output=True)
 
+    # Write params to history file
+    log_generated_file(source, start_time, duration, filename)
+
 
 @app.route('/download/<filename>')
 def download(filename):
     return send_from_directory('/var/tmp/kodi_addon_test', filename, as_attachment=True)
+
+
+# Returns current timestamp, used as key in history file
+def get_timestamp():
+    return datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')
+
+
+# Returns contents of history.json
+def load_history():
+    if not xbmcvfs.exists(history_path):
+        return {}
+
+    with xbmcvfs.File(history_path, 'r') as file:
+        return json.load(file)
+
+
+# Takes history dict, writes to history.json
+def save_history(history):
+    with xbmcvfs.File(history_path, 'w') as file:
+        json.dump(history, file)
+
+
+# Takes same arguments as gen_mp4, writes entry to history.json
+def log_generated_file(source, start_time, duration, filename):
+    history = load_history()
+    history[get_timestamp()] = {
+        'source': source,
+        'output': f'{filename}.mp4',
+        'start_time': start_time,
+        'duration': duration
+    }
+    save_history(history)
 
 
 if __name__ == '__main__':
