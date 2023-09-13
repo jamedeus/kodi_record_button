@@ -79,16 +79,21 @@ def submit():
     filename = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
 
     # Generate
-    gen_mp4(player.getPlayingFile(), data["startTime"], str(duration), filename)
+    try:
+        gen_mp4(player.getPlayingFile(), data["startTime"], str(duration), filename)
+        return jsonify(f'{filename}.mp4')
 
-    return jsonify(f'{filename}.mp4')
+    except ffmpeg.Error as e:
+        xbmc.log("Failed to generate file:", xbmc.LOGERROR)
+        xbmc.log(str(e.stderr, "utf-8"), xbmc.LOGERROR)
+        # Return the captured stderr from the ffmpeg process
+        return jsonify({'error': 'Unable to generate file, see logs for details'}), 500
 
 
 def gen_mp4(source, start_time, duration, filename):
     xbmc.log(f"Generating clip of {source}", level=xbmc.LOGINFO)
     xbmc.log(f"Start time = {start_time}, duration = {duration}, output file = {filename}", level=xbmc.LOGINFO)
     # Create MP4
-    # Currently fails here with: ffmpeg._run.Error: ffmpeg error (see stderr output for detail)
     ffmpeg.input(
         source
     ).output(
@@ -99,7 +104,7 @@ def gen_mp4(source, start_time, duration, filename):
         crf="30",
         acodec="aac",
         ac="2"
-    ).run(overwrite_output=True)
+    ).run(overwrite_output=True, capture_stderr=True)
 
     # Write params to history file
     log_generated_file(source, start_time, duration, filename)

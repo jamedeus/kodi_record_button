@@ -1,6 +1,5 @@
 // Called when user clicks record button
 async function startRecording() {
-    console.log("Start recording");
     // Change background to red
     record_button.classList.remove("bg-slate-950");
     record_button.classList.add("bg-red-600", "scale-110");
@@ -22,7 +21,6 @@ record_button.addEventListener('touchstart', startRecording);
 
 // Called when user releases click on record button
 async function stopRecording() {
-    console.log("Stop recording");
     // Change background back
     record_button.classList.remove("bg-red-600", "scale-110");
     record_button.classList.add("bg-slate-950");
@@ -34,9 +32,7 @@ async function stopRecording() {
     record_spinner.classList.add("opacity-100");
 
     // Send request to backend, show download button when finished
-    console.log("Calling generateFile");
     await generateFile();
-    console.log("generateFile finished");
 
     // Stop loading animation
     record_text.classList.remove("opacity-0");
@@ -50,7 +46,7 @@ record_button.addEventListener('touchend', stopRecording);
 
 // Called by stopRecording, send post to backend, receive generated filename
 async function generateFile() {
-    console.log("generateFile called");
+    // Send starttime, backend gets endtime + playing file and generates clip
     let response = await fetch('/submit', {
         method: 'POST',
         body: JSON.stringify({"startTime": starttime}),
@@ -59,19 +55,27 @@ async function generateFile() {
             'Content-Type': 'application/json'
         }
     });
+    const data = await response.json();
 
-    // Add link to download button
-    const filename = await response.json();
-    download_button.href = `download/${filename}`;
-    rename_input.dataset.original = filename;
-    rename_input.placeholder = filename;
-    console.log(filename);
+    if (response.ok) {
+        // Add link to download button
+        download_button.href = `download/${data}`;
+        rename_input.dataset.original = data;
+        rename_input.placeholder = data;
+        console.log(`Generated: ${data}`);
 
-    // Show download button, scroll into view if needed
-    download_div.classList.remove("opacity-0", "pointer-events-none");
-    download_div.classList.add("show-result");
-    download_div.scrollIntoView({behavior: "smooth"});
+        // Show download button, scroll into view if needed
+        download_div.classList.remove("opacity-0", "pointer-events-none");
+        download_div.classList.add("show-result");
+        download_div.scrollIntoView({behavior: "smooth"});
 
-    // Reload history menu contents
-    load_history();
+        // Reload history menu contents
+        load_history();
+
+    } else {
+        // Show error in modal
+        error_body.innerHTML = data['error'];
+        show_error_modal(true);
+        console.log(data);
+    };
 };
