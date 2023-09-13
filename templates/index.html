@@ -55,7 +55,7 @@
             </div>
 
             <!-- Contents -->
-            <div id="history-contents" class="flex flex-col mx-auto max-w-[80%] text-center">
+            <div id="history-contents" class="flex flex-col mx-auto max-w-[80%] text-center text-white transition-opacity ease-linear duration-200">
             </div>
         </div>
 
@@ -124,6 +124,10 @@
         };
         update_playing_now();
         setInterval(update_playing_now, 5000);
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        };
     </script>
     <script src="/static/history.js"></script>
     <script src="/static/record.js"></script>

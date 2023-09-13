@@ -33,33 +33,43 @@ document.addEventListener('click', function(event) {
 
 // Request history from backend and add card to history menu for each file
 async function load_history() {
-    // Clear old contents if present
-    history_contents.innerHTML = '';
-
-    // Request new contents
+    // Request new history contents
     let history_json = await fetch('/get_history');
     history_json = await history_json.json();
 
+    // Fade out old contents then empty div
+    history_contents.classList.add('opacity-0');
+    await sleep(200);
+    history_contents.innerHTML = '';
+
     // Add card div for each item in JSON
-    for (const [timestamp, details] of Object.entries(history_json)) {
-        history_contents.insertAdjacentHTML('beforeend',
-            `<div class="bg-slate-950 rounded-xl p-5 text-white mb-3">
-                <h1 class="text-lg font-semibold">${details.output}</h1>
-                <h1 class="text-md text-zinc-500">${new Date(timestamp.replace(/_/g, ' ')).toLocaleString()}</h1>
-                <div class="flex mt-3">
-                    <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white ms-auto" href="download/${details.output}">
-                        <i class="fas fa-file-download m-auto"></i>
-                    </a>
-                    <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white mx-3 edit-button" data-filename="${details.output}" onclick="edit_file(event);"">
-                        <i class="fas fa-pencil-alt m-auto"></i>
-                    </a>
-                    <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white me-auto" data-filename="${details.output}" onclick="delete_file(this);"">
-                        <i class="fas fa-trash-alt m-auto"></i>
-                    </a>
+    if (Object.keys(history_json).length) {
+        for (const [timestamp, details] of Object.entries(history_json)) {
+            history_contents.insertAdjacentHTML('beforeend',
+                `<div class="bg-slate-950 rounded-xl p-5 text-white mb-3">
+                    <h1 class="text-lg font-semibold">${details.output}</h1>
+                    <h1 class="text-md text-zinc-500">${new Date(timestamp.replace(/_/g, ' ')).toLocaleString()}</h1>
+                    <div class="flex mt-3">
+                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white ms-auto" href="download/${details.output}">
+                            <i class="fas fa-file-download m-auto"></i>
+                        </a>
+                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white mx-3 edit-button" data-filename="${details.output}" onclick="edit_file(event);"">
+                            <i class="fas fa-pencil-alt m-auto"></i>
+                        </a>
+                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white me-auto" data-filename="${details.output}" onclick="delete_file(this);"">
+                            <i class="fas fa-trash-alt m-auto"></i>
+                        </a>
+                    </div>
                 </div>
-            </div>
-        `);
+            `);
+        };
+    } else {
+        history_contents.insertAdjacentHTML('beforeend', `<h1 class="text-lg">No files found</h1>`);
     };
+
+    // Fade in new contents
+    history_contents.offsetHeight;
+    history_contents.classList.remove('opacity-0');
 };
 
 
