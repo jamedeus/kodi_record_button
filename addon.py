@@ -12,14 +12,17 @@ from flask import Flask, request, render_template, jsonify, send_from_directory
 # Read currently-playing info
 player = xbmc.Player()
 
-# Get path to addon_data dir, history file
+# Get absolute paths to addon_data dir, history file, output dir
 addon = xbmcaddon.Addon()
-profile_path = addon.getAddonInfo('profile')
+profile_path = xbmc.translatePath(addon.getAddonInfo('profile'))
 history_path = os.path.join(profile_path, 'history.json')
+output_path = os.path.join(profile_path, 'output')
 
-# Create addon_data dir if doesn't exist
+# Create addon_data dir and output dir if they don't exist
 if not xbmcvfs.exists(profile_path):
     xbmcvfs.mkdir(profile_path)
+if not xbmcvfs.exists(output_path):
+    xbmcvfs.mkdir(output_path)
 
 
 app = Flask(__name__, static_url_path='', static_folder='node_modules')
@@ -82,8 +85,7 @@ def gen_mp4(source, start_time, duration, filename):
     ffmpeg.input(
         source
     ).output(
-        # TODO temporary test location, make configurable in addon menu
-        os.path.join('/var/tmp/kodi_addon_test/', f'{filename}.mp4'),
+        os.path.join(output_path, f'{filename}.mp4'),
         ss=start_time,
         t=duration,
         vcodec="libx264",
@@ -98,7 +100,7 @@ def gen_mp4(source, start_time, duration, filename):
 
 @app.route('/download/<filename>')
 def download(filename):
-    return send_from_directory('/var/tmp/kodi_addon_test', filename, as_attachment=True)
+    return send_from_directory(output_path, filename, as_attachment=True)
 
 
 @app.route('/get_history')
