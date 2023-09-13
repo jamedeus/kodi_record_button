@@ -98,14 +98,29 @@ def gen_mp4(source, start_time, duration, filename):
     log_generated_file(source, start_time, duration, filename)
 
 
-@app.route('/download/<filename>')
+@app.get('/download/<filename>')
 def download(filename):
     return send_from_directory(output_path, filename, as_attachment=True)
 
 
-@app.route('/get_history')
+@app.get('/get_history')
 def get_history():
     return jsonify(load_history())
+
+
+@app.post('/delete')
+def delete():
+    filename = request.get_json()
+    # If file exists on disk, delete
+    if xbmcvfs.exists(os.path.join(output_path, filename)):
+        xbmcvfs.delete(os.path.join(output_path, filename))
+
+    # Remove from history file
+    history = load_history()
+    history = {i: history[i] for i in history if history[i]['output'] != filename}
+    save_history(history)
+
+    return (f"{filename} deleted", 200)
 
 
 # Returns current timestamp, used as key in history file
