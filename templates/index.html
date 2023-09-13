@@ -91,7 +91,7 @@
             <label for="filename-input" class="text-md mb-1"><b>Change filename (optional):</b></label>
             <div class="flex">
                 <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-300 rounded-l-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
-                <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="edit_filename(this);"><i class="bi-pencil leading-none"></i></button>
+                <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="rename_file(this);"><i class="bi-pencil leading-none"></i></button>
             </div>
         </div>
 
@@ -114,6 +114,27 @@
 
             <!-- Contents -->
             <div id="history-contents" class="flex flex-col mx-auto max-w-[80%] text-center">
+            </div>
+        </div>
+
+        <!-- Rename modal (hidden) -->
+        <div id="edit-modal" class="fixed flex flex-col top-0 left-0 right-0 pb-3 bg-zinc-700 rounded-2xl w-min mx-auto transform -translate-y-full duration-500 ease-in-out overflow-y-auto">
+            <!-- Header -->
+            <div class="flex py-3">
+                <div class="ms-3 me-auto w-8 h-8"></div>
+                <h1 class="text-white text-2xl font-bold m-auto">Rename</h1>
+                <!-- Close button -->
+                <button id="edit-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-white text-lg flex" onclick="show_edit_modal(false);">
+                    <i class="fas fa-times m-auto"></i>
+                </button>
+            </div>
+
+            <!-- Contents -->
+            <div class="flex flex-col mx-auto py-3 px-10 text-center text-white">
+                <h2 class="text-white text-center text-sm">Original name:</h2>
+                <h1 id="original-filename" class="text-white text-center text-xl font-bold">foobar.mp4</h1>
+                <input id="edit-input" type="text" class="p-2 my-3 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="enter new name" name="filename-input" autocomplete="off">
+                <button id="edit-button" class="bg-green-600 p-2 rounded-lg py-2 px-3 mx-auto flex items-center justify-center" onclick="rename_file(this);">Rename</button>
             </div>
         </div>
     </div>
@@ -140,6 +161,11 @@
         const history_menu = document.getElementById('history-menu');
         const history_contents = document.getElementById('history-contents');
         const history_close = document.getElementById('history-close');
+
+        // Edit modal elements
+        const edit_modal = document.getElementById('edit-modal');
+        const original_name = document.getElementById('original-filename');
+        const edit_input = document.getElementById('edit-input');
 
         // Recording vars
         var recording = false;
@@ -241,10 +267,24 @@
             };
         };
 
-        // Close history menu when user clicks outside div
+        // Takes bool, shows modal if true, hides if false
+        function show_edit_modal(state) {
+            if (state) {
+                edit_modal.classList.remove('-translate-y-full', 'top-0');
+                edit_modal.classList.add('translate-y-0', 'top-1/3');
+            } else {
+                edit_modal.classList.remove('translate-y-0', 'top-1/3');
+                edit_modal.classList.add('-translate-y-full', 'top-0');
+            }
+        };
+
+        // Close history menu/edit modal when user clicks outside either div
         document.addEventListener('click', function(event) {
             if (!history_menu.contains(event.target) && !history_button.contains(event.target)) {
                 open_history_menu(false);
+            }
+            if (!edit_modal.contains(event.target)) {
+                show_edit_modal(false);
             }
         });
 
@@ -267,7 +307,7 @@
                         <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white ms-auto" href="download/${details.output}">
                             <i class="fas fa-file-download m-auto"></i>
                         </a>
-                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white mx-3" href="edit/${details.output}">
+                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white mx-3 edit-button" data-filename="${details.output}" onclick="edit_file(event);"">
                             <i class="fas fa-pencil-alt m-auto"></i>
                         </a>
                         <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white me-auto" data-filename="${details.output}" onclick="delete_file(this);"">
@@ -297,6 +337,44 @@
             console.log(response)
 
             // Reload history contents
+            load_history();
+        };
+
+        // Called by edit buttons in history menu, opens edit modal for selected file
+        function edit_file(e) {
+            event.stopPropagation();
+
+            // Set original name label and input dataset attribute
+            const button = event.target.closest('.edit-button');
+            original_name.innerHTML = button.dataset.filename;
+            edit_input.dataset.original = button.dataset.filename;
+
+            // Close history, open edit modal
+            open_history_menu(false);
+            show_edit_modal(true);
+        };
+
+        // Called by submit button in edit modal, sends request to backend to rename
+        async function rename_file() {
+            // Read old name from dataset attribute, new from input
+            const payload = {
+                'old': edit_input.dataset.original,
+                'new': edit_input.value
+            }
+
+            let response = await fetch('/rename', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: {
+                    'Accept': 'application/json, text/plain, */*',
+                    'Content-Type': 'application/json'
+                }
+            });
+            response = await response.text();
+            console.log(response)
+
+            // Close modal and reload history contents
+            show_edit_modal(false);
             load_history();
         };
     </script>

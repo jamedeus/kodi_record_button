@@ -111,6 +111,7 @@ def get_history():
 @app.post('/delete')
 def delete():
     filename = request.get_json()
+
     # If file exists on disk, delete
     if xbmcvfs.exists(os.path.join(output_path, filename)):
         xbmcvfs.delete(os.path.join(output_path, filename))
@@ -121,6 +122,32 @@ def delete():
     save_history(history)
 
     return (f"{filename} deleted", 200)
+
+
+@app.post('/rename')
+def rename():
+    # Parse old and new filename from payload
+    data = request.get_json()
+    old = data['old']
+    new = data['new']
+
+    # Add extension if missing
+    if not new.lower().endswith('.mp4'):
+        new = f'{new}.mp4'
+
+    # If file exists on disk, rename
+    if xbmcvfs.exists(os.path.join(output_path, old)):
+        xbmcvfs.rename(os.path.join(output_path, old), os.path.join(output_path, new))
+
+    # Change name in history file
+    history = load_history()
+    for i in history:
+        if history[i]['output'] == old:
+            history[i]['output'] = new
+            break
+    save_history(history)
+
+    return (f'"{old}" renamed to "{new}"', 200)
 
 
 # Returns current timestamp, used as key in history file
