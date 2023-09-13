@@ -4,9 +4,9 @@
     <title>Kodi Recorder</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/@fortawesome/fontawesome-free/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="/smoothscroll-polyfill/dist/smoothscroll.min.js"></script>
     <style>
         /* Loading spinner */
         .loading-animation div {
@@ -91,7 +91,7 @@
             <label for="filename-input" class="text-md mb-1"><b>Change filename (optional):</b></label>
             <div class="flex">
                 <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-500 rounded-l-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
-                <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="rename_file(this);"><i class="bi-pencil leading-none"></i></button>
+                <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="rename_file(this);"><i class="fas fa-pencil-alt m-auto"></i></button>
             </div>
         </div>
 
