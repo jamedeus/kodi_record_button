@@ -31,6 +31,13 @@ app = Flask(__name__, static_url_path='', static_folder='node_modules')
 app.jinja_env.cache = {}
 
 
+# Serve non-node_modules static files
+# TODO remove in prod
+@app.get("/static/<path:filename>")
+def static_serve(filename):
+    return send_from_directory('static', filename)
+
+
 @app.get("/")
 def serve():
     return render_template('index.html')
