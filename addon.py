@@ -147,7 +147,7 @@ def rename():
             break
     save_history(history)
 
-    return (f'"{old}" renamed to "{new}"', 200)
+    return jsonify({'filename': new})
 
 
 # Returns current timestamp, used as key in history file

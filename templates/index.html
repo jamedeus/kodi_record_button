@@ -90,7 +90,7 @@
             <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-4 text-xl font-semibold rounded-lg">Download</a>
             <label for="filename-input" class="text-md mb-1"><b>Change filename (optional):</b></label>
             <div class="flex">
-                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-300 rounded-l-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
+                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-500 rounded-l-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
                 <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="rename_file(this);"><i class="bi-pencil leading-none"></i></button>
             </div>
         </div>
@@ -239,6 +239,8 @@
             // Add link to download button
             const filename = await response.json();
             download_button.href = `download/${filename}`;
+            rename_input.dataset.original = filename;
+            rename_input.placeholder = filename;
             console.log(filename);
 
             // Show download button, scroll into view if needed
@@ -355,12 +357,21 @@
         };
 
         // Called by submit button in edit modal, sends request to backend to rename
-        async function rename_file() {
+        async function rename_file(button) {
             // Read old name from dataset attribute, new from input
-            const payload = {
-                'old': edit_input.dataset.original,
-                'new': edit_input.value
-            }
+            if (button.id == "edit-button") {
+                // Renaming from history menu
+                var payload = {
+                    'old': edit_input.dataset.original,
+                    'new': edit_input.value
+                }
+            } else {
+                // Renaming from input below download button
+                var payload = {
+                    'old': rename_input.dataset.original,
+                    'new': rename_input.value
+                }
+            };
 
             let response = await fetch('/rename', {
                 method: 'POST',
@@ -370,12 +381,19 @@
                     'Content-Type': 'application/json'
                 }
             });
-            response = await response.text();
-            console.log(response)
+            response = await response.json();
+            console.log(`${payload['old']} renamed to ${response['filename']}`)
 
             // Close modal and reload history contents
             show_edit_modal(false);
             load_history();
+
+            // Change download link if renaming from input below download button
+            if (button.id != "edit-button") {
+                download_button.href = `download/${response['filename']}`;
+                rename_input.dataset.original = response['filename'];
+                rename_input.placeholder = response['filename'];
+            };
         };
     </script>
 </body>
