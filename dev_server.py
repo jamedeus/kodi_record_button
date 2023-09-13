@@ -53,6 +53,10 @@ def rename():
     if not new.lower().endswith('.mp4'):
         new = f'{new}.mp4'
 
+    # Return error if file with same name exists
+    if is_duplicate(new):
+        return (jsonify({'error': f'File named {new} already exists'}), 409)
+
     # Change name in history file
     history = load_history()
     for i in history:
@@ -62,6 +66,20 @@ def rename():
     save_history(history)
 
     return jsonify({'filename': new})
+
+
+# Takes filename, returns True if it exists on disk or in history,
+# otherwise returns False if unique
+def is_duplicate(filename):
+    if filename in os.listdir():
+        return True
+
+    history = load_history()
+    for i in history:
+        if filename == history[i]['output']:
+            return True
+
+    return False
 
 
 # Returns current timestamp, used as key in history file

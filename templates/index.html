@@ -79,6 +79,24 @@
                 <button id="edit-button" class="bg-green-600 p-2 rounded-lg py-2 px-3 mx-auto flex items-center justify-center" onclick="rename_file(this);">Rename</button>
             </div>
         </div>
+
+        <!-- Error modal (hidden) -->
+        <div id="error-modal" class="fixed flex flex-col top-0 left-0 right-0 pb-3 bg-zinc-700 rounded-2xl w-80 mx-auto transform -translate-y-full duration-500 ease-in-out overflow-y-auto">
+            <!-- Header -->
+            <div class="flex py-3">
+                <div class="ms-3 me-auto w-8 h-8"></div>
+                <h1 class="text-white text-2xl font-bold m-auto">Error</h1>
+                <!-- Close button -->
+                <button id="error-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-white text-lg flex" onclick="show_error_modal(false);">
+                    <i class="fas fa-times m-auto"></i>
+                </button>
+            </div>
+
+            <!-- Contents -->
+            <div class="flex flex-col mx-auto pb-3 px-10">
+                <h1 id="error-modal-contents" class="text-lg text-white text-center"></div>
+            </div>
+        </div>
     </div>
     <script>
         // Now playing elements
@@ -108,6 +126,10 @@
         const edit_modal = document.getElementById('edit-modal');
         const original_name = document.getElementById('original-filename');
         const edit_input = document.getElementById('edit-input');
+
+        // Error modal elements
+        const error_modal = document.getElementById('error-modal');
+        const error_body = document.getElementById('error-modal-contents');
 
         // Recording vars
         var recording = false;

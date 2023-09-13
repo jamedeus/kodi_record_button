@@ -20,13 +20,31 @@ function show_edit_modal(state) {
 };
 
 
-// Close history menu/edit modal when user clicks outside either div
+// Takes bool, shows error modal if true, hides if false
+function show_error_modal(state) {
+    if (state) {
+        error_modal.classList.remove('-translate-y-full', 'top-0');
+        error_modal.classList.add('translate-y-0', 'top-1/3');
+    } else {
+        error_modal.classList.remove('translate-y-0', 'top-1/3');
+        error_modal.classList.add('-translate-y-full', 'top-0');
+    }
+};
+
+
+// Close all menus/modals when user clicks outside them
 document.addEventListener('click', function(event) {
+    // Close history menu (unless clicked inside menu)
     if (!history_menu.contains(event.target) && !history_button.contains(event.target)) {
         open_history_menu(false);
     }
+    // Close edit modal (unless clicked inside modal)
     if (!edit_modal.contains(event.target)) {
         show_edit_modal(false);
+    }
+    // Close error modal (unless clicked inside modal)
+    if (!error_modal.contains(event.target)) {
+        show_error_modal(false);
     }
 });
 
@@ -130,6 +148,7 @@ async function rename_file(button) {
         }
     };
 
+    // Send request, decode response, hide edit modal
     let response = await fetch('/rename', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -138,17 +157,25 @@ async function rename_file(button) {
             'Content-Type': 'application/json'
         }
     });
-    response = await response.json();
-    console.log(`${payload['old']} renamed to ${response['filename']}`);
-
-    // Close modal and reload history contents
+    const data = await response.json();
     show_edit_modal(false);
-    load_history();
 
-    // Change download link if renaming from input below download button
-    if (button.id != "edit-button") {
-        download_button.href = `download/${response['filename']}`;
-        rename_input.dataset.original = response['filename'];
-        rename_input.placeholder = response['filename'];
+    if (response.ok) {
+        // Reload history contents
+        load_history();
+
+        // Change download link if renaming from input below download button
+        if (button.id != "edit-button") {
+            download_button.href = `download/${data['filename']}`;
+            rename_input.dataset.original = data['filename'];
+            rename_input.placeholder = data['filename'];
+        };
+        console.log(`${payload['old']} renamed to ${data['filename']}`);
+
+    } else {
+        // Show error in modal
+        error_body.innerHTML = data['error'];
+        show_error_modal(true);
+        console.log(data);
     };
 };
