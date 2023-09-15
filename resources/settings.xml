@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="flask_host" label="IP" type="ipaddress" default="0.0.0.0"/>
+        <setting id="flask_port" label="Port" type="number" default="8123"/>
+    </category>
+</settings>

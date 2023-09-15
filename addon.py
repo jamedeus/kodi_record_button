@@ -213,4 +213,8 @@ def log_generated_file(source, start_time, duration, filename):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8123, debug=False)
+    # Read from settings.xml
+    host = addon.getSetting('flask_host')
+    port = int(addon.getSetting('flask_port'))
+
+    app.run(host=host, port=port, debug=False)
