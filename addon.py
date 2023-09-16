@@ -1,12 +1,16 @@
 import os
+import time
 import xbmc
 import json
 import string
 import ffmpeg
 import random
+import socket
 import xbmcvfs
 import datetime
 import xbmcaddon
+import threading
+from wsgiref.simple_server import make_server, WSGIServer
 from flask import Flask, request, render_template, jsonify, send_from_directory
  
 # Read currently-playing info
@@ -212,9 +216,73 @@ def log_generated_file(source, start_time, duration, filename):
     save_history(history)
 
 
-if __name__ == '__main__':
+# Detect when user changes settings in GUI
+class SettingsMonitor(xbmc.Monitor):
+    def __init__(self):
+        self.changed = False
+        xbmc.Monitor.__init__(self)
+
+    def onSettingsChanged(self):
+        xbmc.log("Settings were changed, restarting flask", xbmc.LOGINFO)
+        self.changed = True
+
+
+# Starts flask, returns server object so it can be stopped later
+def run_server():
     # Read from settings.xml
     host = addon.getSetting('flask_host')
     port = int(addon.getSetting('flask_port'))
 
-    app.run(host=host, port=port, debug=False)
+    # Check if address is available, wait until released
+    if not address_available(host, port):
+        xbmc.log(f"Address {host}:{port} is in use, waiting...")
+        wait_for_address_release(host, port)
+
+    # Create WSGIServer serving flask app on host:port
+    httpd = make_server(host, port, app, server_class=WSGIServer)
+
+    # Run server in new thread
+    def start_server():
+        httpd.serve_forever()
+    server_thread = threading.Thread(target=start_server)
+    server_thread.start()
+
+    return httpd
+
+
+# Returns True if host:port is available, False if in use
+def address_available(host, port):
+    xbmc.log(f"Checking {host}:{port} availablility...", xbmc.LOGINFO)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return not s.connect_ex((host, port)) == 0
+
+
+# Check if host:port is available every 5 seconds, return when available
+def wait_for_address_release(host, port):
+    while not address_available(host, port):
+        xbmc.log(f"Waiting for {host}:{port} to open...", xbmc.LOGINFO)
+        time.sleep(5)
+    xbmc.log(f"Address {host}:{port} released")
+
+
+if __name__ == '__main__':
+    # Start flask server in thread
+    server_instance = run_server()
+
+    # Monitor for user settings changes
+    monitor = SettingsMonitor()
+    while not monitor.abortRequested():
+        if monitor.waitForAbort(1):
+            break
+
+        # Restart flask if user made changes
+        elif monitor.changed:
+            xbmc.log("Restarting flask...", xbmc.LOGINFO)
+            # Shut down old server to release address
+            server_instance.shutdown()
+            server_instance.server_close()
+            xbmc.log("Old server stopped", xbmc.LOGINFO)
+            # Start new server
+            server_instance = run_server()
+            xbmc.log("Finished restarting flask...", xbmc.LOGINFO)
+            monitor.changed = False
