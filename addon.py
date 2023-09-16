@@ -7,6 +7,7 @@ import ffmpeg
 import random
 import socket
 import xbmcvfs
+import xbmcgui
 import datetime
 import xbmcaddon
 import threading
@@ -265,9 +266,17 @@ def wait_for_address_release(host, port):
     xbmc.log(f"Address {host}:{port} released")
 
 
+def show_notification(title, message, display_time=5000, icon=xbmcgui.NOTIFICATION_INFO):
+    xbmcgui.Dialog().notification(title, message, icon, display_time)
+
+
 if __name__ == '__main__':
     # Start flask server in thread
     server_instance = run_server()
+    show_notification(
+        "Record Button",
+        f"Available at http://{addon.getSetting('flask_host')}:{addon.getSetting('flask_port')}"
+    )
 
     # Monitor for user settings changes
     monitor = SettingsMonitor()
@@ -278,6 +287,7 @@ if __name__ == '__main__':
         # Restart flask if user made changes
         elif monitor.changed:
             xbmc.log("Restarting flask...", xbmc.LOGINFO)
+            show_notification("Record Button", "Restarting web server")
             # Shut down old server to release address
             server_instance.shutdown()
             server_instance.server_close()
@@ -285,4 +295,5 @@ if __name__ == '__main__':
             # Start new server
             server_instance = run_server()
             xbmc.log("Finished restarting flask...", xbmc.LOGINFO)
+            show_notification("Record Button", "Finished starting web server")
             monitor.changed = False
