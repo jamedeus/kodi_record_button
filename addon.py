@@ -270,16 +270,39 @@ def show_notification(title, message, display_time=5000, icon=xbmcgui.NOTIFICATI
     xbmcgui.Dialog().notification(title, message, icon, display_time)
 
 
-if __name__ == '__main__':
-    # Start flask server in thread
-    server_instance = run_server()
-    show_notification(
-        "Record Button",
-        f"Available at http://{addon.getSetting('flask_host')}:{addon.getSetting('flask_port')}"
-    )
+def show_error(title, message):
+    dialog = xbmcgui.Dialog()
+    choice = dialog.yesno(title, message, yeslabel="Open Settings", nolabel="Cancel")
+    # Redirect to addon settings if option selected
+    if choice:
+        addon.openSettings()
 
-    # Monitor for user settings changes
+
+if __name__ == '__main__':
+    # Get object used to detect settings changes.
+    # Must instantiate before showing error - monitor detects when settings are opened and
+    # closed, if settings are already open when instantiated no changes will be detected.
     monitor = SettingsMonitor()
+
+    # Confirm port is available before starting web server
+    host = addon.getSetting('flask_host')
+    port = int(addon.getSetting('flask_port'))
+    if address_available(host, port):
+        # Start flask server in new thread
+        server_instance = run_server()
+        xbmc.log(f"Web server on {host}:{port}", xbmc.LOGINFO)
+        show_notification("Record Button", f"Available at http://{host}:{port}")
+
+    # If port not available show error message with link to settings
+    else:
+        show_error(
+            "Record Button",
+            f"Unable to start - the address {host}:{port} is not available, please change it in settings"
+        )
+        xbmc.log(f"Unable to start web server, {host}:{port} not available", xbmc.LOGINFO)
+        server_instance = None
+
+    # Monitor for settings changes, restart server when user makes changes
     while not monitor.abortRequested():
         if monitor.waitForAbort(1):
             break
@@ -289,9 +312,12 @@ if __name__ == '__main__':
             xbmc.log("Restarting flask...", xbmc.LOGINFO)
             show_notification("Record Button", "Restarting web server")
             # Shut down old server to release address
-            server_instance.shutdown()
-            server_instance.server_close()
-            xbmc.log("Old server stopped", xbmc.LOGINFO)
+            try:
+                server_instance.shutdown()
+                server_instance.server_close()
+                xbmc.log("Old server stopped", xbmc.LOGINFO)
+            except AttributeError:
+                pass
             # Start new server
             server_instance = run_server()
             xbmc.log("Finished restarting flask...", xbmc.LOGINFO)
