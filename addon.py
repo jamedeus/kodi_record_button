@@ -236,8 +236,10 @@ def run_server():
 
     # Check if address is available, wait until released
     if not address_available(host, port):
-        xbmc.log(f"Address {host}:{port} is in use, waiting...")
-        wait_for_address_release(host, port)
+        # If address in use wait up to 2 minutes before showing error
+        if not wait_for_address_release(host, port, 120):
+            address_unavailable_error(host, port)
+            return None
 
     # Create WSGIServer serving flask app on host:port
     httpd = make_server(host, port, app, server_class=WSGIServer)
@@ -258,12 +260,19 @@ def address_available(host, port):
         return not s.connect_ex((host, port)) == 0
 
 
-# Check if host:port is available every 5 seconds, return when available
-def wait_for_address_release(host, port):
+# Check if host:port is available every 5 seconds, return True when available
+# If timeout (seconds) given returns False after timeout seconds
+def wait_for_address_release(host, port, timeout=None):
+    start_time = time.time()
     while not address_available(host, port):
         xbmc.log(f"Waiting for {host}:{port} to open...", xbmc.LOGINFO)
         time.sleep(5)
-    xbmc.log(f"Address {host}:{port} released")
+        if timeout and time.time() - start_time > timeout:
+            xbmc.log(f"Timed out waiting for {host}:{port}", xbmc.LOGINFO)
+            return False
+
+    xbmc.log(f"Address {host}:{port} available", xbmc.LOGINFO)
+    return True
 
 
 def show_notification(title, message, display_time=5000, icon=xbmcgui.NOTIFICATION_INFO):
@@ -276,6 +285,15 @@ def show_error(title, message):
     # Redirect to addon settings if option selected
     if choice:
         addon.openSettings()
+
+
+# Takes host and port, shows error popup with link to addon settings
+def address_unavailable_error(host, port):
+    show_error(
+        "Record Button",
+        f"Unable to start - the address {host}:{port} is not available, please change it in settings"
+    )
+    xbmc.log(f"Unable to start web server, {host}:{port} not available", xbmc.LOGINFO)
 
 
 if __name__ == '__main__':
@@ -295,11 +313,7 @@ if __name__ == '__main__':
 
     # If port not available show error message with link to settings
     else:
-        show_error(
-            "Record Button",
-            f"Unable to start - the address {host}:{port} is not available, please change it in settings"
-        )
-        xbmc.log(f"Unable to start web server, {host}:{port} not available", xbmc.LOGINFO)
+        address_unavailable_error(host, port)
         server_instance = None
 
     # Monitor for settings changes, restart server when user makes changes
