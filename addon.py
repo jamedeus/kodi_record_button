@@ -4,11 +4,17 @@ import socket
 import xbmcgui
 import xbmcaddon
 import threading
+from socketserver import ThreadingMixIn
 from wsgiref.simple_server import make_server, WSGIServer
 from flask_backend import app
 
 # Used to read settings.xml
 addon = xbmcaddon.Addon()
+
+
+# Multi-threaded WSGIServer
+class ThreadedWSGIServer(ThreadingMixIn, WSGIServer):
+    pass
 
 
 # Detect when user changes settings in GUI
@@ -72,8 +78,9 @@ def wait_for_address_release(host, port, timeout=None):
 # Starts flask server, returns server object so it can be stopped later
 def run_server():
     # Read address from settings.xml
-    host = addon.getSetting('flask_host')
-    port = int(addon.getSetting('flask_port'))
+    # Reinstantiate Addon() to avoid caching issue
+    host = xbmcaddon.Addon().getSetting('flask_host')
+    port = int(xbmcaddon.Addon().getSetting('flask_port'))
 
     # Check if address is available, wait up to 2 minutes
     if not address_available(host, port):
@@ -83,12 +90,10 @@ def run_server():
             return None
 
     # Create WSGIServer serving flask app on host:port
-    httpd = make_server(host, port, app, server_class=WSGIServer)
+    httpd = make_server(host, port, app, server_class=ThreadedWSGIServer)
 
     # Run server in new thread
-    def start_server():
-        httpd.serve_forever()
-    server_thread = threading.Thread(target=start_server)
+    server_thread = threading.Thread(target=httpd.serve_forever)
     server_thread.start()
 
     return httpd
@@ -124,12 +129,10 @@ def main():
             xbmc.log("Restarting flask...", xbmc.LOGINFO)
             show_notification("Record Button", "Restarting web server")
             # Shut down old server to release address
-            try:
+            if server_instance:
                 server_instance.shutdown()
                 server_instance.server_close()
                 xbmc.log("Old server stopped", xbmc.LOGINFO)
-            except AttributeError:
-                pass
             # Start new server
             server_instance = run_server()
             xbmc.log("Finished restarting flask...", xbmc.LOGINFO)
