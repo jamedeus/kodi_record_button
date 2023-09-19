@@ -10,6 +10,9 @@ function open_history_menu(state) {
 
 // Takes bool, shows edit name modal if true, hides if false
 function show_edit_modal(state) {
+    // Clear input before showing modal
+    edit_input.value = '';
+
     if (state) {
         edit_modal.classList.remove('-translate-y-full', 'top-0');
         edit_modal.classList.add('translate-y-0', 'top-1/3');
@@ -55,6 +58,9 @@ async function load_history() {
     // Returns array of tuples containing timestamp and filename
     let history_json = await fetch('/get_history');
     history_json = await history_json.json();
+
+    // Clear history search
+    history_search.value = '';
 
     // Add card div for each item in response
     await populate_history_menu(history_json);
@@ -199,11 +205,22 @@ async function rename_file(button) {
         // Reload history contents
         load_history();
 
-        // Change download link if renaming from input below download button
-        if (button.id != "edit-button") {
+        // Detect if file linked by main download button was renamed from history
+        // menu instead of the input below download button
+        const download_button_link = download_button.href.split('download/')[1];
+        const download_button_orig = encodeURIComponent(rename_input.dataset.original);
+        if (payload['old'] == download_button_orig && download_button_orig == download_button_link) {
+            console.log('yoyoyo')
+            var edited_from_history = true;
+        }
+
+        // Change main download button link if file was renamed from input below
+        // download button, or if renamed from history menu
+        if (button.id != "edit-button" || edited_from_history) {
             download_button.href = `download/${data['filename']}`;
             rename_input.dataset.original = data['filename'];
             rename_input.placeholder = data['filename'];
+            rename_input.value = '';
         };
         console.log(`${payload['old']} renamed to ${data['filename']}`);
 

@@ -31,6 +31,9 @@ async function stopRecording() {
     record_spinner.classList.remove("opacity-0");
     record_spinner.classList.add("opacity-100");
 
+    // Resume updating playing_now contents
+    recording = false;
+
     // Send request to backend, show download button when finished
     await generateFile();
 
@@ -58,10 +61,11 @@ async function generateFile() {
     const data = await response.json();
 
     if (response.ok) {
-        // Add link to download button
+        // Add link to download button, clear rename input
         download_button.href = `download/${data}`;
         rename_input.dataset.original = data;
         rename_input.placeholder = data;
+        rename_input.value = '';
         console.log(`Generated: ${data}`);
 
         // Show download button, scroll into view if needed
