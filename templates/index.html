@@ -43,9 +43,9 @@
         </div>
 
         <!-- History menu (hidden) -->
-        <div id="history-menu" class="fixed flex flex-col bottom-0 left-0 right-0 h-[95%] lg:h-[80%] lg:max-w-[50%] mx-5 lg:mx-auto bg-zinc-700 rounded-t-2xl transform translate-y-full transition-transform duration-500 ease-in-out overflow-y-auto">
+        <div id="history-menu" class="fixed flex flex-col bottom-0 left-0 right-0 h-[95%] lg:h-[80%] lg:max-w-[50%] mx-5 lg:mx-auto bg-zinc-700 rounded-t-2xl transform translate-y-full transition-transform duration-500 ease-in-out overscroll-contain overflow-y-auto">
             <!-- Header -->
-            <div class="sticky top-0 z-10 bg-zinc-700">
+            <div id="history-header" class="sticky top-0 z-10 bg-zinc-700">
                 <div class="flex py-3">
                     <div class="ms-3 me-auto w-8 h-8"></div>
                     <h1 class="text-white text-2xl font-bold m-auto">History</h1>
@@ -125,6 +125,7 @@
         // History menu elements
         const history_button = document.getElementById('history-button');
         const history_menu = document.getElementById('history-menu');
+        const history_header = document.getElementById('history-header');
         const history_contents = document.getElementById('history-contents');
         const history_close = document.getElementById('history-close');
         const history_search = document.getElementById('search-input');

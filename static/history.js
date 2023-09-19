@@ -231,3 +231,28 @@ async function rename_file(button) {
         console.log(data);
     };
 };
+
+
+// Used to close history menu when swiping down from top
+let y_coord_start = null;
+
+// Store Y coordinate when history menu header touched, used to detect
+// user swiping down from top to close menu
+history_header.addEventListener("touchstart", function(event) {
+    y_coord_start = event.touches[0].clientY;
+}, {capture: true});
+
+
+// Compare coordinates on release, close menu if user swiped down >8 px
+history_header.addEventListener("touchmove", function(event) {
+    if (y_coord_start === null) {return};
+    event.preventDefault();
+
+    // Close history menu if user swiped down more than 8 px
+    if ((y_coord_start - event.touches[0].clientY) < -8) {
+        open_history_menu(false);
+    };
+
+    // Reset initial coordinate
+    y_coord_start = null;
+}, {capture: true});
