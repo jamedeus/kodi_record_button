@@ -1,28 +1,14 @@
 import os
 import xbmc
-import json
 import string
 import ffmpeg
 import random
-import xbmcvfs
-import datetime
-import xbmcaddon
 from flask import Flask, request, render_template, jsonify, send_from_directory
+from paths import output_path
+from database import log_generated_file, load_history_json, rename_entry, delete_entry, is_duplicate
 
 # Read currently-playing info
 player = xbmc.Player()
-
-# Get absolute paths to addon_data dir, history file, output dir
-addon = xbmcaddon.Addon()
-profile_path = xbmc.translatePath(addon.getAddonInfo('profile'))
-history_path = os.path.join(profile_path, 'history.json')
-output_path = os.path.join(profile_path, 'output')
-
-# Create addon_data dir and output dir if they don't exist
-if not xbmcvfs.exists(profile_path):
-    xbmcvfs.mkdir(profile_path)
-if not xbmcvfs.exists(output_path):
-    xbmcvfs.mkdir(output_path)
 
 
 app = Flask(__name__, static_url_path='', static_folder='node_modules')
@@ -106,7 +92,7 @@ def gen_mp4(source, start_time, duration, filename):
         ac="2"
     ).run(overwrite_output=True, capture_stderr=True)
 
-    # Write params to history file
+    # Write params to database
     log_generated_file(source, start_time, duration, filename)
 
 
@@ -117,21 +103,15 @@ def download(filename):
 
 @app.get('/get_history')
 def get_history():
-    return jsonify(load_history())
+    return jsonify(load_history_json())
 
 
 @app.post('/delete')
 def delete():
     filename = request.get_json()
 
-    # If file exists on disk, delete
-    if xbmcvfs.exists(os.path.join(output_path, filename)):
-        xbmcvfs.delete(os.path.join(output_path, filename))
-
-    # Remove from history file
-    history = load_history()
-    history = {i: history[i] for i in history if history[i]['output'] != filename}
-    save_history(history)
+    # Delete from disk and database
+    delete_entry(filename)
 
     return (f"{filename} deleted", 200)
 
@@ -151,62 +131,7 @@ def rename():
     if is_duplicate(new):
         return (jsonify({'error': f'File named {new} already exists'}), 409)
 
-    # If file exists on disk, rename
-    if xbmcvfs.exists(os.path.join(output_path, old)):
-        xbmcvfs.rename(os.path.join(output_path, old), os.path.join(output_path, new))
-
-    # Change name in history file
-    history = load_history()
-    for i in history:
-        if history[i]['output'] == old:
-            history[i]['output'] = new
-            break
-    save_history(history)
+    # Rename on disk and in database
+    rename_entry(old, new)
 
     return jsonify({'filename': new})
-
-
-# Takes filename, returns True if it exists on disk or in history,
-# otherwise returns False if unique
-def is_duplicate(filename):
-    if filename in os.listdir(output_path):
-        return True
-
-    history = load_history()
-    for i in history:
-        if filename == history[i]['output']:
-            return True
-
-    return False
-
-
-# Returns current timestamp, used as key in history file
-def get_timestamp():
-    return datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')
-
-
-# Returns contents of history.json
-def load_history():
-    if not xbmcvfs.exists(history_path):
-        return {}
-
-    with xbmcvfs.File(history_path, 'r') as file:
-        return json.load(file)
-
-
-# Takes history dict, writes to history.json
-def save_history(history):
-    with xbmcvfs.File(history_path, 'w') as file:
-        json.dump(history, file)
-
-
-# Takes same arguments as gen_mp4, writes entry to history.json
-def log_generated_file(source, start_time, duration, filename):
-    history = load_history()
-    history[get_timestamp()] = {
-        'source': source,
-        'output': f'{filename}.mp4',
-        'start_time': start_time,
-        'duration': duration
-    }
-    save_history(history)
