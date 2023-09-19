@@ -99,17 +99,17 @@ async function populate_history_menu(history_json) {
             const timestamp = entry[0];
             const filename = entry[1];
             history_contents.insertAdjacentHTML('beforeend',
-                `<div class="bg-slate-950 rounded-xl p-5 text-white mb-3">
-                    <h1 class="text-lg font-semibold">${filename}</h1>
+                `<div class="bg-slate-950 rounded-xl px-5 py-3 text-white mb-3">
+                    <h1 class="text-lg font-semibold line-clamp-1">${filename}</h1>
                     <h1 class="text-md text-zinc-500">${new Date(timestamp.replace(/_/g, ' ')).toLocaleString()}</h1>
-                    <div class="flex mt-3">
-                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white ms-auto" href="download/${filename}">
+                    <div class="flex mt-2">
+                        <a class="flex h-9 w-9 lg:h-10 lg:w-10 bg-zinc-500 rounded-lg text-white cursor-pointer ms-auto" href="download/${filename}">
                             <i class="fas fa-file-download m-auto"></i>
                         </a>
-                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white mx-3 edit-button" data-filename="${filename}" onclick="edit_file(event);"">
+                        <a class="flex h-9 w-9 lg:h-10 lg:w-10 bg-zinc-500 rounded-lg text-white cursor-pointer mx-3 edit-button" data-filename="${filename}" onclick="edit_file(event);"">
                             <i class="fas fa-pencil-alt m-auto"></i>
                         </a>
-                        <a class="flex h-10 w-10 bg-zinc-500 rounded-lg text-white me-auto" data-filename="${filename}" onclick="delete_file(this);"">
+                        <a class="flex h-9 w-9 lg:h-10 lg:w-10 bg-zinc-500 rounded-lg text-white cursor-pointer me-auto" data-filename="${filename}" onclick="delete_file(this);"">
                             <i class="fas fa-trash-alt m-auto"></i>
                         </a>
                     </div>
