@@ -2,7 +2,7 @@ import os
 import xbmcvfs
 import datetime
 from sqlalchemy.pool import NullPool
-from sqlalchemy import create_engine, Float, String, Boolean
+from sqlalchemy import create_engine, Float, String, Boolean, select, desc
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from paths import output_path, database_path
 
@@ -68,10 +68,11 @@ def log_generated_file(source, start_time, duration, filename):
 def load_history_json():
     # Query output filename and timestamp columns
     with Session(engine) as session:
-        query = session.query(GeneratedFile.output, GeneratedFile.timestamp)
-        history = {entry.timestamp: entry.output for entry in query}
+        stmt = select(GeneratedFile.timestamp, GeneratedFile.output).order_by(desc(GeneratedFile.timestamp))
+        result = session.execute(stmt).all()
+        # Convert to list of tuples with timestamp and filename
+        history = [tuple(entry) for entry in result]
 
-    # Convert to dict with timestamp as key, filename as value
     return history
 
 

@@ -52,6 +52,7 @@ document.addEventListener('click', function(event) {
 // Request history from backend and add card to history menu for each file
 async function load_history() {
     // Request new history contents
+    // Returns array of tuples containing timestamp and filename
     let history_json = await fetch('/get_history');
     history_json = await history_json.json();
 
@@ -62,7 +63,9 @@ async function load_history() {
 
     // Add card div for each item in JSON
     if (Object.keys(history_json).length) {
-        for (const [timestamp, filename] of Object.entries(history_json)) {
+        history_json.forEach(function(entry) {
+            const timestamp = entry[0];
+            const filename = entry[1];
             history_contents.insertAdjacentHTML('beforeend',
                 `<div class="bg-slate-950 rounded-xl p-5 text-white mb-3">
                     <h1 class="text-lg font-semibold">${filename}</h1>
@@ -80,7 +83,7 @@ async function load_history() {
                     </div>
                 </div>
             `);
-        };
+        });
     } else {
         history_contents.insertAdjacentHTML('beforeend', `<h1 class="text-lg">No files found</h1>`);
     };
