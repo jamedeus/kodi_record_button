@@ -45,13 +45,17 @@
         <!-- History menu (hidden) -->
         <div id="history-menu" class="fixed flex flex-col bottom-0 left-0 right-0 h-[80%] bg-zinc-700 rounded-t-2xl mx-5 transform translate-y-full transition-transform duration-500 ease-in-out overflow-y-auto">
             <!-- Header -->
-            <div class="flex py-3 mb-3">
+            <div class="flex py-3">
                 <div class="ms-3 me-auto w-8 h-8"></div>
                 <h1 class="text-white text-2xl font-bold m-auto">History</h1>
                 <!-- Close button -->
                 <button id="history-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-white text-xl flex" onclick="open_history_menu(false);">
                     <i class="fas fa-times m-auto"></i>
                 </button>
+            </div>
+            <!-- Search -->
+            <div class="flex py-3 mb-3 mx-auto">
+                <input id="search-input" type="text" class="p-2 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center text-white focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="Search..." autocomplete="off">
             </div>
 
             <!-- Contents -->
@@ -121,6 +125,7 @@
         const history_menu = document.getElementById('history-menu');
         const history_contents = document.getElementById('history-contents');
         const history_close = document.getElementById('history-close');
+        const history_search = document.getElementById('search-input');
 
         // Edit modal elements
         const edit_modal = document.getElementById('edit-modal');

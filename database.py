@@ -69,11 +69,36 @@ def log_generated_file(source, start_time, duration, filename):
         session.commit()
 
 
-# Returns payload for get_history endpoint
+# Returns list of (timestamp, filename) tuples for every file in database
 def load_history_json():
     # Query output filename and timestamp columns
     with Session(engine) as session:
-        stmt = select(GeneratedFile.timestamp, GeneratedFile.output).order_by(desc(GeneratedFile.timestamp))
+        stmt = select(
+            GeneratedFile.timestamp,
+            GeneratedFile.output
+        ).order_by(
+            desc(GeneratedFile.timestamp)
+        )
+        result = session.execute(stmt).all()
+        # Convert to list of tuples with timestamp and filename
+        history = [tuple(entry) for entry in result]
+
+    return history
+
+
+# Takes search_string, returns list of (timestamp, filename) tuples
+# for each file in history that starts with search_string
+def load_history_search_results(search_string):
+    # Query output filename and timestamp columns
+    with Session(engine) as session:
+        stmt = select(
+            GeneratedFile.timestamp,
+            GeneratedFile.output
+        ).where(
+            GeneratedFile.output.startswith(search_string)
+        ).order_by(
+            desc(GeneratedFile.timestamp)
+        )
         result = session.execute(stmt).all()
         # Convert to list of tuples with timestamp and filename
         history = [tuple(entry) for entry in result]

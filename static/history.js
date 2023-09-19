@@ -56,6 +56,38 @@ async function load_history() {
     let history_json = await fetch('/get_history');
     history_json = await history_json.json();
 
+    // Add card div for each item in response
+    await populate_history_menu(history_json);
+};
+
+
+// Takes search_string, requests all history entries with filenames starting
+// with search_string and adds card to history menu for each file
+async function search_history(search_string) {
+    let history_json = await fetch('/search_history', {
+        method: 'POST',
+        body: JSON.stringify(search_string),
+        headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/json'
+        }
+    });
+    history_json = await history_json.json();
+
+    // Add card div for each item in response
+    await populate_history_menu(history_json);
+};
+
+
+// Update history menu contents on search input
+history_search.addEventListener('input', function() {
+    const search_string = history_search.value;
+    search_history(search_string);
+});
+
+
+// Takes get_history response object, adds card to history menu for each entry
+async function populate_history_menu(history_json) {
     // Fade out old contents then empty div
     history_contents.classList.add('opacity-0');
     await sleep(200);

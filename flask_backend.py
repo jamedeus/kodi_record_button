@@ -5,7 +5,14 @@ import ffmpeg
 import random
 from flask import Flask, request, render_template, jsonify, send_from_directory
 from paths import output_path
-from database import log_generated_file, load_history_json, rename_entry, delete_entry, is_duplicate
+from database import (
+    log_generated_file,
+    load_history_json,
+    load_history_search_results,
+    rename_entry,
+    delete_entry,
+    is_duplicate
+)
 
 # Read currently-playing info
 player = xbmc.Player()
@@ -104,6 +111,12 @@ def download(filename):
 @app.get('/get_history')
 def get_history():
     return jsonify(load_history_json())
+
+
+@app.post('/search_history')
+def search_history():
+    search_string = request.get_json()
+    return jsonify(load_history_search_results(search_string))
 
 
 @app.post('/delete')
