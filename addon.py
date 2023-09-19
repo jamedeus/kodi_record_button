@@ -121,7 +121,12 @@ def main():
 
     # Monitor for settings changes, restart server when user makes changes
     while not monitor.abortRequested():
+        # Kodi shutting down, stop flask server
         if monitor.waitForAbort(1):
+            if server_instance:
+                server_instance.shutdown()
+                server_instance.server_close()
+            xbmc.log("Closed web server", xbmc.LOGINFO)
             break
 
         # Restart flask if user made changes
@@ -142,3 +147,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    xbmc.log("Addon exiting", xbmc.LOGINFO)
