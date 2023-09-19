@@ -2,8 +2,8 @@ import os
 import xbmcvfs
 import datetime
 from sqlalchemy.pool import NullPool
-from sqlalchemy import create_engine, Float, String, Boolean, select, desc
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+from sqlalchemy import create_engine, Float, String, Boolean, select, desc, or_
 from paths import output_path, database_path
 
 
@@ -30,6 +30,10 @@ class GeneratedFile(Base):
     # Request timestamp in YYYY-MM-DD_HH:MM:SS.MS syntax
     timestamp: Mapped[str] = mapped_column(String(26), nullable=False)
 
+    # Show and episode names, used in history search
+    show_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    episode_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
     # Track if user has renamed the file (prevent auto delete)
     renamed: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -54,18 +58,18 @@ def get_filename_query(filename):
     return select(GeneratedFile).where(GeneratedFile.output == filename)
 
 
-def log_generated_file(source, start_time, duration, filename):
+def log_generated_file(source, start_time, duration, filename, show_name, episode_name):
     with Session(engine) as session:
-        new = GeneratedFile(
+        session.add(GeneratedFile(
             source=source,
             output=f'{filename}.mp4',
             start_time=start_time,
             duration=duration,
             timestamp=get_timestamp(),
+            show_name=show_name,
+            episode_name=episode_name,
             renamed=False
-        )
-
-        session.add(new)
+        ))
         session.commit()
 
 
@@ -86,8 +90,8 @@ def load_history_json():
     return history
 
 
-# Takes search_string, returns list of (timestamp, filename) tuples
-# for each file in history that starts with search_string
+# Takes search_string, returns list of (timestamp, filename) tuples for each
+# entry whose output filename, show_name, or episode_name contain search_string
 def load_history_search_results(search_string):
     # Query output filename and timestamp columns
     with Session(engine) as session:
@@ -95,7 +99,11 @@ def load_history_search_results(search_string):
             GeneratedFile.timestamp,
             GeneratedFile.output
         ).where(
-            GeneratedFile.output.startswith(search_string)
+            or_(
+                GeneratedFile.output.contains(search_string),
+                GeneratedFile.show_name.contains(search_string),
+                GeneratedFile.episode_name.contains(search_string)
+            )
         ).order_by(
             desc(GeneratedFile.timestamp)
         )

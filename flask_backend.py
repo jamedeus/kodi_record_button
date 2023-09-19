@@ -71,9 +71,14 @@ def submit():
     # Generate random 16 char string
     filename = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
 
+    # Get show and episode names for history search
+    video_info_tag = player.getVideoInfoTag()
+    show_name = video_info_tag.getTVShowTitle()
+    episode_name = video_info_tag.getTitle()
+
     # Generate
     try:
-        gen_mp4(player.getPlayingFile(), data["startTime"], str(duration), filename)
+        gen_mp4(player.getPlayingFile(), data["startTime"], str(duration), filename, show_name, episode_name)
         return jsonify(f'{filename}.mp4')
 
     except ffmpeg.Error as e:
@@ -83,7 +88,7 @@ def submit():
         return jsonify({'error': 'Unable to generate file, see logs for details'}), 500
 
 
-def gen_mp4(source, start_time, duration, filename):
+def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
     xbmc.log(f"Generating clip of {source}", level=xbmc.LOGINFO)
     xbmc.log(f"Start time = {start_time}, duration = {duration}, output file = {filename}", level=xbmc.LOGINFO)
     # Create MP4
@@ -100,7 +105,7 @@ def gen_mp4(source, start_time, duration, filename):
     ).run(overwrite_output=True, capture_stderr=True)
 
     # Write params to database
-    log_generated_file(source, start_time, duration, filename)
+    log_generated_file(source, start_time, duration, filename, show_name, episode_name)
 
 
 @app.get('/download/<filename>')
