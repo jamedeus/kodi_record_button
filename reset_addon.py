@@ -27,6 +27,12 @@ def uninstall_addon():
     except FileNotFoundError:
         pass
 
+    # Delete addon_data dir (contains output clips, database)
+    try:
+        shutil.rmtree("/home/jamedeus/.kodi/userdata/addon_data/script.record.button/")
+    except FileNotFoundError:
+        pass
+
     # Clear kodi log
     try:
         os.remove("/home/jamedeus/.kodi/temp/kodi.log")
