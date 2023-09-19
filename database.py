@@ -49,6 +49,11 @@ def get_timestamp():
     return datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')
 
 
+# Takes filename, returns SELECT statement for entries with identical filename
+def get_filename_query(filename):
+    return select(GeneratedFile).where(GeneratedFile.output == filename)
+
+
 def log_generated_file(source, start_time, duration, filename):
     with Session(engine) as session:
         new = GeneratedFile(
@@ -84,7 +89,7 @@ def rename_entry(old, new):
 
     # Rename in database
     with Session(engine) as session:
-        entry = session.query(GeneratedFile).filter_by(output=old).first()
+        entry = session.scalar(get_filename_query(old))
         entry.output = new
         entry.renamed = True
         session.commit()
@@ -94,7 +99,7 @@ def rename_entry(old, new):
 def delete_entry(filename):
     # Delete from database
     with Session(engine) as session:
-        entry = session.query(GeneratedFile).filter_by(output=filename).first()
+        entry = session.scalar(get_filename_query(filename))
         session.delete(entry)
         session.commit()
 
@@ -106,6 +111,6 @@ def delete_entry(filename):
 # Takes filename, returns True if already exists in database
 def is_duplicate(filename):
     with Session(engine) as session:
-        if session.query(GeneratedFile).filter_by(output=filename).first():
+        if session.scalar(get_filename_query(filename)):
             return True
     return False
