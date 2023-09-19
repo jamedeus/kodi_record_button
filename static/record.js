@@ -9,7 +9,11 @@ async function startRecording() {
 
     // Get start timestamp
     var result = await fetch(`/get_playtime`);
-    starttime = await result.json();
+    if (result.ok) {
+        start_time = await result.json();
+    } else {
+        console.log("Unable to get start time");
+    };
 
     // Hide download button if visible from previous run
     download_div.classList.add("opacity-0", "pointer-events-none")
@@ -35,7 +39,10 @@ async function stopRecording() {
     recording = false;
 
     // Send request to backend, show download button when finished
-    await generateFile();
+    // Skip if start_time missing (record pressed while nothing playing)
+    if (start_time) {
+        await generateFile();
+    };
 
     // Stop loading animation
     record_text.classList.remove("opacity-0");
@@ -52,7 +59,7 @@ async function generateFile() {
     // Send starttime, backend gets endtime + playing file and generates clip
     let response = await fetch('/submit', {
         method: 'POST',
-        body: JSON.stringify({"startTime": starttime}),
+        body: JSON.stringify({"startTime": start_time}),
         headers: {
             'Accept': 'application/json, text/plain, */*',
             'Content-Type': 'application/json'
@@ -82,4 +89,7 @@ async function generateFile() {
         show_error_modal(true);
         console.log(data);
     };
+
+    // Clear old start_time
+    start_time = '';
 };
