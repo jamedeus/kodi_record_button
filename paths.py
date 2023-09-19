@@ -1,13 +1,12 @@
 import os
-import xbmc
 import xbmcvfs
 import xbmcaddon
 
 
 # Get absolute paths to addon source dir + addon_data dir
 addon = xbmcaddon.Addon()
-addon_path = xbmc.translatePath(addon.getAddonInfo('path'))
-profile_path = xbmc.translatePath(addon.getAddonInfo('profile'))
+addon_path = xbmcvfs.translatePath(addon.getAddonInfo('path'))
+profile_path = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
 
 # Create addon_data dir if it doesn't exist
 if not xbmcvfs.exists(profile_path):
