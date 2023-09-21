@@ -15,9 +15,10 @@ function show_edit_modal(state) {
 
     if (state) {
         edit_modal.classList.remove('-translate-y-full', 'top-0');
-        edit_modal.classList.add('translate-y-0', 'top-1/3');
+        edit_modal.classList.add('translate-y-0', 'lg:top-1/3', 'top-10');
+        edit_input.focus();
     } else {
-        edit_modal.classList.remove('translate-y-0', 'top-1/3');
+        edit_modal.classList.remove('translate-y-0', 'lg:top-1/3', 'top-10');
         edit_modal.classList.add('-translate-y-full', 'top-0');
     }
 };
@@ -210,7 +211,6 @@ async function rename_file(button) {
         const download_button_link = download_button.href.split('download/')[1];
         const download_button_orig = encodeURIComponent(rename_input.dataset.original);
         if (payload['old'] == download_button_orig && download_button_orig == download_button_link) {
-            console.log('yoyoyo')
             var edited_from_history = true;
         }
 

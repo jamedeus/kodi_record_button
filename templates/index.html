@@ -134,6 +134,7 @@
         const edit_modal = document.getElementById('edit-modal');
         const original_name = document.getElementById('original-filename');
         const edit_input = document.getElementById('edit-input');
+        const edit_button = document.getElementById('edit-button');
 
         // Error modal elements
         const error_modal = document.getElementById('error-modal');
@@ -154,6 +155,18 @@
         };
         update_playing_now();
         setInterval(update_playing_now, 5000);
+
+        // Rename by pressing enter key inside inputs
+        rename_input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                rename_button.click();
+            };
+        });
+        edit_input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                edit_button.click();
+            };
+        });
 
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
