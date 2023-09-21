@@ -5,5 +5,6 @@
         <setting id="flask_port" label="Port" type="number" default="8123"/>
         <setting id="autodelete" label="Autodelete" type="bool" default="false"/>
         <setting id="delete_after_days" label="Delete clips older than (days)" type="number" default="30" visible="eq(-1,true)" subsetting="true"/>
+        <setting id="keep_renamed_files" label="Don't delete renamed clips" type="bool" default="true" visible="eq(-2,true)" subsetting="true"/>
     </category>
 </settings>

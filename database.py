@@ -175,9 +175,14 @@ def get_older_than(days):
 
 
 # Takes list of ORM objects, deletes all from db
-def bulk_delete(entries):
+# Optional bool arg prevents user-renamed files from being deleted
+def bulk_delete(entries, keep_renamed=False):
     with Session(engine) as session:
         for entry in entries:
+            # Skip renamed files if setting enabled
+            if keep_renamed and entry.renamed:
+                continue
+
             xbmc.log(f"Automatically deleting {entry.output}", xbmc.LOGINFO)
 
             # If file exists on disk, delete

@@ -166,11 +166,15 @@ def rename():
 # Temporary workaround
 @app.get('/autodelete')
 def autodelete():
-    # Get number of days from user settings
+    # Read user settings (number of days, whether to keep renamed files)
     days = int(xbmcaddon.Addon().getSetting('delete_after_days'))
-    xbmc.log(f"Deleting clips older than {days} days", xbmc.LOGINFO)
 
-    # Delete files older than cutoff
-    bulk_delete(get_older_than(days))
+    if xbmcaddon.Addon().getSetting('keep_renamed_files') == 'true':
+        xbmc.log(f"Deleting clips older than {days} days (keeping renamed)", xbmc.LOGINFO)
+        bulk_delete(get_older_than(days), True)
+
+    else:
+        xbmc.log(f"Deleting clips older than {days} days", xbmc.LOGINFO)
+        bulk_delete(get_older_than(days), False)
 
     return jsonify('done')
