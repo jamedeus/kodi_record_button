@@ -42,7 +42,11 @@ def serve():
 
 @app.get("/get_playtime")
 def get_playtime():
-    return jsonify(player.getTime())
+    try:
+        playtime = player.getTime()
+        return jsonify(playtime)
+    except RuntimeError:
+        return jsonify('Nothing playing'), 500
 
 
 @app.get("/get_playing_now")
@@ -65,23 +69,23 @@ def get_playing_now():
 
 @app.post("/submit")
 def submit():
-    # Get stop time immediately
-    stop_time = player.getTime()
-
-    # Parse post body, calculcate clip duration
-    data = request.get_json()
-    duration = stop_time - float(data["startTime"])
-
-    # Generate random 16 char string
-    filename = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
-
-    # Get show and episode names for history search
-    video_info_tag = player.getVideoInfoTag()
-    show_name = video_info_tag.getTVShowTitle()
-    episode_name = video_info_tag.getTitle()
-
-    # Generate
     try:
+        # Get stop time immediately
+        stop_time = player.getTime()
+
+        # Parse post body, calculcate clip duration
+        data = request.get_json()
+        duration = stop_time - float(data["startTime"])
+
+        # Generate random 16 char string
+        filename = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
+
+        # Get show and episode names for history search
+        video_info_tag = player.getVideoInfoTag()
+        show_name = video_info_tag.getTVShowTitle()
+        episode_name = video_info_tag.getTitle()
+
+        # Generate
         gen_mp4(player.getPlayingFile(), data["startTime"], str(duration), filename, show_name, episode_name)
         return jsonify(f'{filename}.mp4')
 
@@ -93,7 +97,11 @@ def submit():
         xbmc.log("Failed to generate file due to SQL error:", xbmc.LOGERROR)
         xbmc.log(e.args[0], xbmc.LOGERROR)
 
-    return jsonify({'error': 'Unable to generate file, see logs for details'}), 500
+    except RuntimeError as e:
+        xbmc.log("Failed to generate file due to Kodi RuntimeError:", xbmc.LOGERROR)
+        xbmc.log(e.args[0], xbmc.LOGERROR)
+
+    return jsonify({'error': 'Unable to generate file, see Kodi logs for details'}), 500
 
 
 def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
