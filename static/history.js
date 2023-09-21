@@ -53,6 +53,25 @@ document.addEventListener('click', function(event) {
 });
 
 
+// Close all menus/modals when user presses escape key
+document.body.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' || event.keyCode === 27) {
+        open_history_menu(false);
+        show_edit_modal(false);
+        show_error_modal(false);
+    };
+});
+
+
+// Open history when user presses H key outside input field
+document.body.addEventListener('keydown', function(event) {
+    if (event.target.tagName !== 'INPUT') {
+        if (event.key === 'h' || event.key === 'H') {
+            open_history_menu(true);
+        }
+    }
+})
+
 // Request history from backend and add card to history menu for each file
 async function load_history() {
     // Request new history contents
