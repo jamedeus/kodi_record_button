@@ -9,30 +9,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/smoothscroll-polyfill/dist/smoothscroll.min.js"></script>
 </head>
-<body class="flex justify-center min-h-screen bg-slate-950 p-5">
+<body class="flex justify-center min-h-screen bg-slate-950 py-3 px-5 lg:py-5">
     <div class="flex flex-col">
-        <h1 class="text-4xl text-white text-center mb-5">Kodi Recorder</h1>
+        <h1 class="text-4xl text-white text-center mb-2 lg:mb-5">Kodi Recorder</h1>
 
         <!-- Now playing info -->
-        <div id="stream-info" class="bg-zinc-800 text-zinc-200 rounded-xl text-center mx-auto py-4 px-8 shadow-md">
-            <h1 id="playing-now" class="text-lg">Playing Now:</h1>
-            <h1 id="episode-playing" class="text-3xl font-bold mt-2">Nothing</h1>
-            <h3 id="episode-details" class="text-md mt-2">Season 1 Episode 1</h3>
+        <div id="stream-info" class="bg-zinc-800 text-zinc-200 rounded-xl text-center mx-auto py-2 px-6 lg:py-4 lg:px-8 shadow-md">
+            <h1 id="playing-now" class="text-md lg:text-lg">Playing Now:</h1>
+            <h1 id="episode-playing" class="text-2xl lg:text-3xl font-bold mt-1 lg:my-2">Nothing</h1>
+            <h3 id="episode-details" class="hidden lg:block text-md"></h3>
         </div>
 
         <!-- Record button -->
-        <div id="record-button" class="bg-slate-950 text-zinc-200 select-none rounded-full relative mx-auto mt-10 w-52 h-52 border-2 border-white transition-all duration-500">
+        <div id="record-button" class="bg-slate-950 text-zinc-200 select-none rounded-full relative mx-auto mt-8 lg:mt-10 w-44 h-44 lg:w-52 lg:h-52 border-2 border-white transition-all duration-500">
             <h1 id="record-button-text" class="absolute inset-0 flex items-center justify-center text-3xl font-medium opacity-100 transition-opacity">Record</h1>
             <div id="spinner" class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity loading-animation"><div></div><div></div><div></div><div></div></div>
         </div>
 
         <!-- Download button -->
         <!-- Hidden on load with pointer-events-none opacity-0 -->
-        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg text-center mt-10 mb-5 mx-auto p-8 shadow-md pointer-events-none opacity-0 transition-opacity duration-500">
-            <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-4 text-xl font-semibold rounded-lg">Download</a>
-            <label for="filename-input" class="text-md mb-1"><b>Change filename (optional):</b></label>
+        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg text-center mt-8 lg:mt-10 mb-5 mx-auto p-4 lg:p-6 shadow-md pointer-events-none opacity-0 transition-opacity duration-500">
+            <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-3 text-lg font-bold rounded-lg">Download</a>
+            <label for="filename-input" class="text-md font-light mb-1"><b>Rename (optional):</b></label>
             <div class="flex">
-                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-500 rounded-l-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
+                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-500 rounded-l-md rounded-r-none text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
                 <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="rename_file(this);"><i class="fas fa-pencil-alt m-auto"></i></button>
             </div>
         </div>
