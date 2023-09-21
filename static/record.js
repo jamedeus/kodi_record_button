@@ -41,7 +41,13 @@ async function stopRecording() {
     // Send request to backend, show download button when finished
     // Skip if start_time missing (record pressed while nothing playing)
     if (start_time) {
-        await generateFile();
+        try {
+            await generateFile();
+        } catch {
+            // Show error in modal
+            error_body.innerHTML = "Failed due to backend error, see Kodi logs for details";
+            show_error_modal(true);
+        };
     };
 
     // Stop loading animation

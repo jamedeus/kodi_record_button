@@ -4,6 +4,7 @@ import string
 import ffmpeg
 import random
 import xbmcaddon
+from sqlalchemy.exc import OperationalError
 from flask import Flask, request, render_template, jsonify, send_from_directory
 from paths import output_path
 from database import (
@@ -85,10 +86,14 @@ def submit():
         return jsonify(f'{filename}.mp4')
 
     except ffmpeg.Error as e:
-        xbmc.log("Failed to generate file:", xbmc.LOGERROR)
+        xbmc.log("Failed to generate file due to ffmpeg error:", xbmc.LOGERROR)
         xbmc.log(str(e.stderr, "utf-8"), xbmc.LOGERROR)
-        # Return the captured stderr from the ffmpeg process
-        return jsonify({'error': 'Unable to generate file, see logs for details'}), 500
+
+    except OperationalError as e:
+        xbmc.log("Failed to generate file due to SQL error:", xbmc.LOGERROR)
+        xbmc.log(e.args[0], xbmc.LOGERROR)
+
+    return jsonify({'error': 'Unable to generate file, see logs for details'}), 500
 
 
 def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
