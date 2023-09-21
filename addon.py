@@ -2,6 +2,7 @@ import time
 import xbmc
 import socket
 import xbmcgui
+import requests
 import xbmcaddon
 import threading
 from socketserver import ThreadingMixIn
@@ -95,6 +96,12 @@ def run_server():
     # Run server in new thread
     server_thread = threading.Thread(target=httpd.serve_forever)
     server_thread.start()
+
+    # Run autodelete if enabled
+    # TODO temporary workaround, see note in database.py
+    if xbmcaddon.Addon().getSetting('autodelete') == 'true':
+        xbmc.log("Autodelete enabled", xbmc.LOGINFO)
+        requests.get(f'http://{host}:{port}/autodelete')
 
     return httpd
 

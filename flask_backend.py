@@ -3,6 +3,7 @@ import xbmc
 import string
 import ffmpeg
 import random
+import xbmcaddon
 from flask import Flask, request, render_template, jsonify, send_from_directory
 from paths import output_path
 from database import (
@@ -11,7 +12,9 @@ from database import (
     load_history_search_results,
     rename_entry,
     delete_entry,
-    is_duplicate
+    is_duplicate,
+    get_older_than,
+    bulk_delete
 )
 
 # Read currently-playing info
@@ -153,3 +156,16 @@ def rename():
     rename_entry(old, new)
 
     return jsonify({'filename': new})
+
+
+# Temporary workaround
+@app.get('/autodelete')
+def autodelete():
+    # Get number of days from user settings
+    days = int(xbmcaddon.Addon().getSetting('delete_after_days'))
+    xbmc.log(f"Deleting clips older than {days} days", xbmc.LOGINFO)
+
+    # Delete files older than cutoff
+    bulk_delete(get_older_than(days))
+
+    return jsonify('done')

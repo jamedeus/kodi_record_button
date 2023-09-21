@@ -1,4 +1,5 @@
 import os
+import xbmc
 import xbmcvfs
 import datetime
 from sqlalchemy.pool import NullPool
@@ -147,3 +148,44 @@ def is_duplicate(filename):
         if session.scalar(get_filename_query(filename)):
             return True
     return False
+
+
+# Takes days (int), returns all ORM objects older than days
+def get_older_than(days):
+    # Get datetime object of cutoff date, convert to string
+    cutoff = datetime.datetime.today() - datetime.timedelta(days=days)
+    cutoff = cutoff.strftime('%Y-%m-%d_%H:%M:%S.%f')
+
+    # Get ORM representations of all entries older than cutoff
+    # TODO this works when called from a Flask endpoint but hangs when called
+    # from the main thread, even if no database connections have been opened
+    # and the flask thread has not been started. Everything inside the context
+    # manager runs, but the context manager never exits. No exception is raised.
+    with Session(engine) as session:
+        stmt = select(
+            GeneratedFile
+        ).where(
+            # String comparison required, cannot parse database
+            # timestamp to datetime object within where clause
+            GeneratedFile.timestamp <= cutoff
+        )
+        results = session.scalars(stmt).all()
+
+    return results
+
+
+# Takes list of ORM objects, deletes all from db
+def bulk_delete(entries):
+    with Session(engine) as session:
+        for entry in entries:
+            xbmc.log(f"Automatically deleting {entry.output}", xbmc.LOGINFO)
+
+            # If file exists on disk, delete
+            if xbmcvfs.exists(os.path.join(output_path, entry.output)):
+                xbmcvfs.delete(os.path.join(output_path, entry.output))
+
+            # Delete from database
+            session.delete(entry)
+
+        session.commit()
+    xbmc.log(f"Autodelete complete, deleted {len(entries)} clips", xbmc.LOGINFO)
