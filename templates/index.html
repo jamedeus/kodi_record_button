@@ -10,11 +10,11 @@
     <script src="/smoothscroll-polyfill/dist/smoothscroll.min.js"></script>
 </head>
 <body class="flex justify-center min-h-screen bg-slate-950 py-3 px-5 lg:py-5">
-    <div class="flex flex-col">
-        <h1 class="text-4xl text-white text-center mb-2 lg:mb-5">Kodi Recorder</h1>
+    <div class="flex flex-col text-white text-center">
+        <h1 class="text-4xl mb-2 lg:mb-5">Kodi Recorder</h1>
 
         <!-- Now playing info -->
-        <div id="stream-info" class="bg-zinc-800 text-zinc-200 rounded-xl text-center mx-auto py-2 px-6 lg:py-4 lg:px-8 shadow-md">
+        <div id="stream-info" class="bg-zinc-800 text-zinc-200 rounded-xl mx-auto py-2 px-6 lg:py-4 lg:px-8 shadow-md">
             <h1 id="playing-now" class="text-md lg:text-lg">Playing Now:</h1>
             <h1 id="episode-playing" class="text-2xl lg:text-3xl font-bold mt-1 lg:my-2">Nothing</h1>
             <h3 id="episode-details" class="hidden lg:block text-md"></h3>
@@ -28,7 +28,7 @@
 
         <!-- Download button -->
         <!-- Hidden on load with pointer-events-none opacity-0 -->
-        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg text-center mt-8 lg:mt-10 mb-5 mx-auto p-4 lg:p-6 shadow-md pointer-events-none opacity-0 transition-opacity duration-500">
+        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg mt-8 lg:mt-10 mb-5 mx-auto p-4 lg:p-6 shadow-md pointer-events-none opacity-0 transition-opacity duration-500">
             <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-3 text-lg font-bold rounded-lg">Download</a>
             <label for="filename-input" class="text-md font-light mb-1"><b>Rename (optional):</b></label>
             <div class="flex">
@@ -39,7 +39,7 @@
 
         <!-- History button -->
         <div class="mt-auto flex">
-            <button id="history-button" class="mx-auto bg-zinc-500 py-2 px-3 rounded-lg text-white font-bold" onclick="open_history_menu(true);">History</button>
+            <button id="history-button" class="bg-zinc-500 rounded-lg py-2 px-3 mx-auto font-bold" onclick="open_history_menu(true);">History</button>
         </div>
 
         <!-- History menu (hidden) -->
@@ -48,20 +48,20 @@
             <div id="history-header" class="sticky top-0 z-10 bg-zinc-700">
                 <div class="flex py-3">
                     <div class="ms-3 me-auto w-8 h-8"></div>
-                    <h1 class="text-white text-2xl font-bold m-auto">History</h1>
+                    <h1 class="text-2xl font-bold m-auto">History</h1>
                     <!-- Close button -->
-                    <button id="history-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-white text-xl flex" onclick="open_history_menu(false);">
+                    <button id="history-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-xl flex" onclick="open_history_menu(false);">
                         <i class="fas fa-times m-auto"></i>
                     </button>
                 </div>
                 <!-- Search -->
                 <div class="flex pb-3">
-                    <input id="search-input" type="text" class="mx-auto p-2 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center text-white focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="Search..." autocomplete="off">
+                    <input id="search-input" type="text" class="mx-auto p-2 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="Search..." autocomplete="off">
                 </div>
             </div>
 
             <!-- Contents -->
-            <div id="history-contents" class="flex flex-col mt-3 px-[8%] lg:px-[18%] text-center text-white transition-opacity ease-linear duration-200">
+            <div id="history-contents" class="flex flex-col mt-3 px-[8%] lg:px-[18%] transition-opacity ease-linear duration-200">
             </div>
         </div>
 
@@ -70,19 +70,19 @@
             <!-- Header -->
             <div class="flex py-3">
                 <div class="ms-3 me-auto w-8 h-8"></div>
-                <h1 class="text-white text-2xl font-bold m-auto">Rename</h1>
+                <h1 class="text-2xl font-bold m-auto">Rename</h1>
                 <!-- Close button -->
-                <button id="edit-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-white text-lg flex" onclick="show_edit_modal(false);">
+                <button id="edit-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-lg flex" onclick="show_edit_modal(false);">
                     <i class="fas fa-times m-auto"></i>
                 </button>
             </div>
 
             <!-- Contents -->
-            <div class="flex flex-col mx-auto py-3 px-10 text-center text-white">
-                <h2 class="text-white text-center text-sm">Original name:</h2>
-                <h1 id="original-filename" class="text-white text-center text-xl font-bold">foobar.mp4</h1>
+            <div class="flex flex-col mx-auto py-3 px-10">
+                <h2 class="text-sm">Original name:</h2>
+                <h1 id="original-filename" class="text-xl font-bold">foobar.mp4</h1>
                 <input id="edit-input" type="text" class="p-2 my-3 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="enter new name" name="filename-input" autocomplete="off">
-                <button id="edit-button" class="bg-green-600 p-2 rounded-lg py-2 px-3 mx-auto flex items-center justify-center" onclick="rename_file(this);">Rename</button>
+                <button id="edit-button" class="bg-green-600 rounded-lg py-2 px-3 mx-auto font-bold" onclick="rename_file(this);">Rename</button>
             </div>
         </div>
 
@@ -91,16 +91,16 @@
             <!-- Header -->
             <div class="flex py-3">
                 <div class="ms-3 me-auto w-8 h-8"></div>
-                <h1 class="text-white text-2xl font-bold m-auto">Error</h1>
+                <h1 class="text-2xl font-bold m-auto">Error</h1>
                 <!-- Close button -->
-                <button id="error-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-white text-lg flex" onclick="show_error_modal(false);">
+                <button id="error-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-lg flex" onclick="show_error_modal(false);">
                     <i class="fas fa-times m-auto"></i>
                 </button>
             </div>
 
             <!-- Contents -->
             <div class="flex flex-col mx-auto pb-3 px-10">
-                <h1 id="error-modal-contents" class="text-lg text-white text-center"></div>
+                <h1 id="error-modal-contents" class="text-lg"></div>
             </div>
         </div>
     </div>
