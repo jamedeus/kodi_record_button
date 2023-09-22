@@ -53,14 +53,20 @@ def get_playtime():
 def get_playing_now():
     try:
         video_info_tag = player.getVideoInfoTag()
-        show = video_info_tag.getTVShowTitle()
-        episode_title = video_info_tag.getTitle()
-        episode_number = video_info_tag.getEpisode()
-        season_number = video_info_tag.getSeason()
+
+        # TV shows: add subext with show name + season and episode numbers
+        if video_info_tag.getMediaType() == "episode":
+            show = video_info_tag.getTVShowTitle()
+            episode_number = video_info_tag.getEpisode()
+            season_number = video_info_tag.getSeason()
+            subtext = f"{show} - Season {season_number} - Episode {episode_number}"
+        # Movies: no subtext
+        else:
+            subtext = ""
 
         payload = {
-            "title": episode_title,
-            "subtext": f"{show} - Season {season_number} - Episode {episode_number}"
+            "title": video_info_tag.getTitle(),
+            "subtext": subtext
         }
         return jsonify(payload)
     except RuntimeError:
