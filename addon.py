@@ -2,12 +2,14 @@ import time
 import xbmc
 import socket
 import xbmcgui
+import pyqrcode
 import requests
 import xbmcaddon
 import threading
 from socketserver import ThreadingMixIn
 from wsgiref.simple_server import make_server, WSGIServer
 from flask_backend import app
+from paths import qr_path
 
 # Used to read settings.xml
 addon = xbmcaddon.Addon()
@@ -43,6 +45,12 @@ def show_error(title, message):
     # Redirect to addon settings if option selected
     if choice:
         addon.openSettings()
+
+
+# Takes IP and port, creates QR code link, writes PNG to userdata dir
+def generate_qr_code_link(ip, port):
+    qr = pyqrcode.create(f"http://{ip}:{port}")
+    qr.png(qr_path, scale=8, quiet_zone=1)
 
 
 # Takes host and port, shows error popup with link to addon settings
@@ -103,6 +111,9 @@ def run_server():
         xbmc.log("Autodelete enabled", xbmc.LOGINFO)
         requests.get(f'http://{host}:{port}/autodelete')
 
+    # Generate web interface QR code link
+    generate_qr_code_link(xbmc.getIPAddress(), port)
+
     return httpd
 
 
@@ -119,7 +130,8 @@ def main():
         # Start flask server in new thread
         server_instance = run_server()
         xbmc.log(f"Web server on {host}:{port}", xbmc.LOGINFO)
-        show_notification("Record Button", f"Available at http://{host}:{port}")
+        # Show notification with QR code link as icon
+        show_notification("Record Button", "Scan QR code to open webapp", 15000, qr_path)
 
     # If port not available show error message with link to settings
     else:
@@ -148,7 +160,8 @@ def main():
             # Start new server
             server_instance = run_server()
             xbmc.log("Finished restarting flask...", xbmc.LOGINFO)
-            show_notification("Record Button", "Finished starting web server")
+            # Show notification with QR code link as icon
+            show_notification("Record Button", "Finished starting web server", 10000, qr_path)
             monitor.changed = False
 
 

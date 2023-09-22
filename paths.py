@@ -23,3 +23,6 @@ database_path = os.path.join(profile_path, 'history.db')
 if not xbmcvfs.exists(database_path):
     template_path = os.path.join(addon_path, 'resources', 'history.db')
     xbmcvfs.copy(template_path, database_path)
+
+# Get absolute path to web interface QR code link
+qr_path = os.path.join(profile_path, 'qr_code_link.png')
