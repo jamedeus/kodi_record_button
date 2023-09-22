@@ -104,7 +104,20 @@ def submit():
     return jsonify({'error': 'Unable to generate file, see Kodi logs for details'}), 500
 
 
+# Return bit/s calculated from user-configured quality (MB per minute)
+def get_bitrate():
+    mb_per_min = int(xbmcaddon.Addon().getSetting('mb_per_min'))
+    return int(mb_per_min * 1024 * 1024 * 8 / 60)
+
+
 def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
+    # Get target bitrate from quality setting, input file original bitrate
+    bitrate = get_bitrate()
+
+    # Clamp bitrate to input file original bitrate
+    original_bitrate = int(ffmpeg.probe(source)['format']['bit_rate'])
+    bitrate = min(bitrate, original_bitrate)
+
     xbmc.log(f"Generating clip of {source}", level=xbmc.LOGINFO)
     xbmc.log(f"Start time = {start_time}, duration = {duration}, output file = {filename}", level=xbmc.LOGINFO)
     # Create MP4
@@ -115,7 +128,7 @@ def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
         ss=start_time,
         t=duration,
         vcodec="libx264",
-        crf="30",
+        b=str(bitrate),
         acodec="aac",
         ac="2"
     ).run(overwrite_output=True, capture_stderr=True)

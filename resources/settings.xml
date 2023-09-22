@@ -3,6 +3,7 @@
     <category label="General">
         <setting id="flask_host" label="IP" type="ipaddress" default="0.0.0.0"/>
         <setting id="flask_port" label="Port" type="number" default="8123"/>
+        <setting id="mb_per_min" label="Filesize per minute (MB)" type="slider" default="20" range="1,1,100" option="int"/>
         <setting id="autodelete" label="Autodelete" type="bool" default="false"/>
         <setting id="delete_after_days" label="Delete clips older than (days)" type="number" default="30" visible="eq(-1,true)" subsetting="true"/>
         <setting id="keep_renamed_files" label="Don't delete renamed clips" type="bool" default="true" visible="eq(-2,true)" subsetting="true"/>
