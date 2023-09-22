@@ -36,6 +36,18 @@ function show_error_modal(state) {
 };
 
 
+// Takes bool, shows regen modal if true, hides if false
+function show_regen_modal(state) {
+    if (state) {
+        regen_modal.classList.remove('-translate-y-full', 'top-0');
+        regen_modal.classList.add('translate-y-0', 'top-1/3');
+    } else {
+        regen_modal.classList.remove('translate-y-0', 'top-1/3');
+        regen_modal.classList.add('-translate-y-full', 'top-0');
+    }
+};
+
+
 // Close all menus/modals when user clicks outside them
 document.addEventListener('click', function(event) {
     // Close history menu (unless clicked inside menu)
@@ -129,7 +141,7 @@ async function populate_history_menu(history_json) {
                     <h1 class="text-lg font-semibold line-clamp-1">${filename}</h1>
                     <h1 class="text-md text-zinc-500">${new Date(timestamp.replace(/_/g, ' ')).toLocaleString()}</h1>
                     <div class="flex mt-2">
-                        <a class="flex h-9 w-9 lg:h-10 lg:w-10 bg-zinc-500 rounded-lg text-white cursor-pointer ms-auto" href="download/${filename}">
+                        <a class="flex h-9 w-9 lg:h-10 lg:w-10 bg-zinc-500 rounded-lg text-white cursor-pointer ms-auto" onclick="handleDownload('${filename}')">
                             <i class="fas fa-file-download m-auto"></i>
                         </a>
                         <a class="flex h-9 w-9 lg:h-10 lg:w-10 bg-zinc-500 rounded-lg text-white cursor-pointer mx-3 edit-button" data-filename="${filename}" onclick="edit_file(event);"">
@@ -156,6 +168,25 @@ async function populate_history_menu(history_json) {
 document.addEventListener("DOMContentLoaded", function() {
     load_history();
 });
+
+
+// Called by download buttons in history menu
+async function handleDownload(filename) {
+    // Request headers only to check if the file still exists
+    const response = await fetch(`download/${filename}`, { method: 'HEAD' });
+
+    // Download file if it exists
+    if (response.ok) {
+        window.location.href = `download/${filename}`;
+
+    // Show regen modal if the file was deleted
+    } else {
+        regen_body.innerHTML = `${filename} no longer exists, would you like to regenerate it?`;
+        regen_button.dataset.target = filename;
+        open_history_menu(false);
+        show_regen_modal(true);
+    };
+};
 
 
 // Called by delete buttons in history menu, deletes mp4 from backend

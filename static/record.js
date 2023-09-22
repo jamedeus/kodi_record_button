@@ -99,3 +99,31 @@ async function generateFile() {
     // Clear old start_time
     start_time = '';
 };
+
+
+// Called by button in regenerate modal (shown when attempting to download file that no longer exists)
+async function regenerate_file(button) {
+    // Add loading animation to regen modal
+    regen_body.innerHTML = `<div id="spinner" class="flex items-center justify-center h-24 loading-animation"><div></div><div></div><div></div><div></div></div>`;
+
+    // Send filename to backend, wait for regen to complete
+    let response = await fetch('/regenerate', {
+        method: 'POST',
+        body: JSON.stringify(button.dataset.target),
+        headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (response.ok) {
+        // Hide modal and download file
+        show_regen_modal(false);
+        handleDownload(button.dataset.target)
+    } else {
+        // Show error in modal
+        error_body.innerHTML = "Failed due to backend error, see Kodi logs for details";
+        show_regen_modal(false);
+        show_error_modal(true);
+    };
+};

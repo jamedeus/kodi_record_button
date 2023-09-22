@@ -80,7 +80,7 @@
             <!-- Contents -->
             <div class="flex flex-col mx-auto py-3 px-10">
                 <h2 class="text-sm">Original name:</h2>
-                <h1 id="original-filename" class="text-xl font-bold">foobar.mp4</h1>
+                <h1 id="original-filename" class="text-xl font-bold"></h1>
                 <input id="edit-input" type="text" class="p-2 my-3 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="enter new name" name="filename-input" autocomplete="off">
                 <button id="edit-button" class="bg-green-600 rounded-lg py-2 px-3 mx-auto font-bold" onclick="rename_file(this);">Rename</button>
             </div>
@@ -100,7 +100,26 @@
 
             <!-- Contents -->
             <div class="flex flex-col mx-auto pb-3 px-10">
-                <h1 id="error-modal-contents" class="text-lg"></div>
+                <h1 id="error-modal-contents" class="text-lg"></h1>
+            </div>
+        </div>
+
+        <!-- Regenerate modal (hidden) -->
+        <div id="regen-modal" class="fixed flex flex-col top-0 left-0 right-0 pb-3 bg-zinc-700 rounded-2xl w-80 mx-auto transform -translate-y-full duration-500 ease-in-out overflow-y-auto">
+            <!-- Header -->
+            <div class="flex py-3">
+                <div class="ms-3 me-auto w-8 h-8"></div>
+                <h1 class="text-2xl font-bold m-auto">Missing</h1>
+                <!-- Close button -->
+                <button id="regen-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-lg flex" onclick="show_regen_modal(false);">
+                    <i class="fas fa-times m-auto"></i>
+                </button>
+            </div>
+
+            <!-- Contents -->
+            <div class="flex flex-col mx-auto pb-3 px-10">
+                <h1 id="regen-modal-contents" class="text-lg h-28"></h1>
+                <button id="regen-button" class="bg-green-600 rounded-lg py-2 px-3 mx-auto font-bold" onclick="regenerate_file(this);">Regenerate</button>
             </div>
         </div>
     </div>
@@ -139,6 +158,11 @@
         // Error modal elements
         const error_modal = document.getElementById('error-modal');
         const error_body = document.getElementById('error-modal-contents');
+
+        // Regen modal elements
+        const regen_modal = document.getElementById('regen-modal');
+        const regen_body = document.getElementById('regen-modal-contents');
+        const regen_button = document.getElementById('regen-button');
 
         // Recording vars
         var recording = false;

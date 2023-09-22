@@ -59,6 +59,12 @@ def get_filename_query(filename):
     return select(GeneratedFile).where(GeneratedFile.output == filename)
 
 
+# Takes filename, returns ORM entry
+def get_orm_entry(filename):
+    with Session(engine) as session:
+        return session.scalar(get_filename_query(filename))
+
+
 def log_generated_file(source, start_time, duration, filename, show_name, episode_name):
     with Session(engine) as session:
         session.add(GeneratedFile(

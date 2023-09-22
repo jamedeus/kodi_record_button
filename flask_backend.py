@@ -15,7 +15,8 @@ from database import (
     delete_entry,
     is_duplicate,
     get_older_than,
-    bulk_delete
+    bulk_delete,
+    get_orm_entry
 )
 
 # Read currently-playing info
@@ -91,20 +92,41 @@ def submit():
         show_name = video_info_tag.getTVShowTitle()
         episode_name = video_info_tag.getTitle()
 
-        # Generate
-        gen_mp4(player.getPlayingFile(), data["startTime"], str(duration), filename, show_name, episode_name)
-        return jsonify(f'{filename}.mp4')
+        source = player.getPlayingFile()
 
-    except ffmpeg.Error as e:
-        xbmc.log("Failed to generate file due to ffmpeg error:", xbmc.LOGERROR)
-        xbmc.log(str(e.stderr, "utf-8"), xbmc.LOGERROR)
+        # Generate, write params to database and return filename if successful
+        if gen_mp4(source, data["startTime"], str(duration), filename, show_name, episode_name):
+            log_generated_file(source, data["startTime"], str(duration), filename, show_name, episode_name)
+            return jsonify(f'{filename}.mp4')
+
+    except RuntimeError as e:
+        xbmc.log("Failed to generate file due to Kodi RuntimeError:", xbmc.LOGERROR)
+        xbmc.log(e.args[0], xbmc.LOGERROR)
 
     except OperationalError as e:
         xbmc.log("Failed to generate file due to SQL error:", xbmc.LOGERROR)
         xbmc.log(e.args[0], xbmc.LOGERROR)
 
-    except RuntimeError as e:
-        xbmc.log("Failed to generate file due to Kodi RuntimeError:", xbmc.LOGERROR)
+    return jsonify({'error': 'Unable to generate file, see Kodi logs for details'}), 500
+
+
+@app.post("/regenerate")
+def regenerate():
+    try:
+        # Read filename from post body, get ORM entry from database
+        filename = request.get_json()
+        xbmc.log(f"Regenerating {filename}", xbmc.LOGINFO)
+        entry = get_orm_entry(filename)
+
+        # Prevent double extension
+        output = filename.replace('.mp4', '')
+
+        # Regenerate with params from database, return filename if successful
+        if gen_mp4(entry.source, entry.start_time, entry.duration, output, entry.show_name, entry.episode_name):
+            return jsonify(f'{filename}.mp4')
+
+    except OperationalError as e:
+        xbmc.log("Failed to regenerate file due to SQL error:", xbmc.LOGERROR)
         xbmc.log(e.args[0], xbmc.LOGERROR)
 
     return jsonify({'error': 'Unable to generate file, see Kodi logs for details'}), 500
@@ -117,30 +139,36 @@ def get_bitrate():
 
 
 def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
-    # Get target bitrate from quality setting, input file original bitrate
-    bitrate = get_bitrate()
+    try:
+        # Get target bitrate from quality setting, input file original bitrate
+        bitrate = get_bitrate()
 
-    # Clamp bitrate to input file original bitrate
-    original_bitrate = int(ffmpeg.probe(source)['format']['bit_rate'])
-    bitrate = min(bitrate, original_bitrate)
+        # Clamp bitrate to input file original bitrate
+        original_bitrate = int(ffmpeg.probe(source)['format']['bit_rate'])
+        bitrate = min(bitrate, original_bitrate)
 
-    xbmc.log(f"Generating clip of {source}", level=xbmc.LOGINFO)
-    xbmc.log(f"Start time = {start_time}, duration = {duration}, output file = {filename}", level=xbmc.LOGINFO)
-    # Create MP4
-    ffmpeg.input(
-        source
-    ).output(
-        os.path.join(output_path, f'{filename}.mp4'),
-        ss=start_time,
-        t=duration,
-        vcodec="libx264",
-        b=str(bitrate),
-        acodec="aac",
-        ac="2"
-    ).run(overwrite_output=True, capture_stderr=True)
+        xbmc.log(f"Generating clip of {source}", level=xbmc.LOGINFO)
+        xbmc.log(f"Start time = {start_time}, duration = {duration}, output file = {filename}", level=xbmc.LOGINFO)
+        # Create MP4
+        ffmpeg.input(
+            source
+        ).output(
+            os.path.join(output_path, f'{filename}.mp4'),
+            ss=start_time,
+            t=duration,
+            vcodec="libx264",
+            b=str(bitrate),
+            acodec="aac",
+            ac="2"
+        ).run(overwrite_output=True, capture_stderr=True)
 
-    # Write params to database
-    log_generated_file(source, start_time, duration, filename, show_name, episode_name)
+        return True
+
+    except ffmpeg.Error as e:
+        xbmc.log("Failed to generate file due to ffmpeg error:", xbmc.LOGERROR)
+        xbmc.log(str(e.stderr, "utf-8"), xbmc.LOGERROR)
+
+    return False
 
 
 @app.get('/download/<filename>')
