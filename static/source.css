@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Loading spinner */
 .loading-animation div {
     box-sizing: border-box;
