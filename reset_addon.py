@@ -11,6 +11,20 @@ pwd = os.path.dirname(os.path.realpath(__file__))
 git = os.path.split(pwd)[0]
 
 
+exclude_from_zip = [
+    'dev_server.py',
+    'package.json',
+    'package-lock.json',
+    'play_test_file.py',
+    'refresh.py',
+    'reset_addon.py',
+    'tailwind.config.js',
+    'test_history.json',
+    'mock_kodi_modules.py',
+    'test_flask_backend.py'
+]
+
+
 def uninstall_addon():
     # Open addons database
     conn = sqlite3.connect("/home/jamedeus/.kodi/userdata/Database/Addons33.db")
@@ -66,8 +80,8 @@ def re_zip_addon():
     # Add all repo files to zip without including repo dir
     for root, dirs, files in os.walk(pwd):
         for file in files:
-            # Don't add this script
-            if file == "reload.py":
+            # Don't add dev scripts
+            if file in exclude_from_zip or file.endswith('.pyc'):
                 continue
 
             abs_path = os.path.join(root, file)
