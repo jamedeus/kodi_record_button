@@ -202,7 +202,7 @@ def rename():
     # Parse old and new filename from payload
     data = request.get_json()
     old = data['old']
-    new = data['new']
+    new = data['new'].strip()
 
     # Add extension if missing
     if not new.lower().endswith('.mp4'):

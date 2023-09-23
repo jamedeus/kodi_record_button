@@ -198,14 +198,14 @@ class TestEndpoints(TestCase):
             self.assertEqual(response.get_data(as_text=True), 'file.mp4 deleted')
 
     def test_rename(self):
-        # Create mock request payload
-        payload = json.dumps({'old': 'original.mp4', 'new': 'new_name'})
+        # Create mock request payload with trailing whitespace
+        payload = json.dumps({'old': 'original.mp4', 'new': 'new_name '})
 
         # Mock database function to do nothing, mock is_duplicate to return False
         with patch('flask_backend.rename_entry'), \
              patch('flask_backend.is_duplicate', return_value=False):
 
-            # Send request, confirm status code and JSON
+            # Send request, confirm status code and JSON, confirm trailing whitespace removed
             response = self.app.post('/rename', data=payload, content_type='application/json')
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.get_json(), {'filename': 'new_name.mp4'})
