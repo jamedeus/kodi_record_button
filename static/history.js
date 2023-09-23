@@ -1,89 +1,3 @@
-// Takes bool, opens history menu if true, closes if false
-function open_history_menu(state) {
-    if (state) {
-        history_menu.style.transform = 'translateY(0)';
-    } else {
-        history_menu.style.transform = 'translateY(100%)';
-    };
-};
-
-
-// Takes bool, shows edit name modal if true, hides if false
-function show_edit_modal(state) {
-    // Clear input before showing modal
-    edit_input.value = '';
-
-    if (state) {
-        edit_modal.classList.remove('-translate-y-full', 'top-0');
-        edit_modal.classList.add('translate-y-0', 'lg:top-1/3', 'top-10');
-        edit_input.focus();
-    } else {
-        edit_modal.classList.remove('translate-y-0', 'lg:top-1/3', 'top-10');
-        edit_modal.classList.add('-translate-y-full', 'top-0');
-    }
-};
-
-
-// Takes bool, shows error modal if true, hides if false
-function show_error_modal(state) {
-    if (state) {
-        error_modal.classList.remove('-translate-y-full', 'top-0');
-        error_modal.classList.add('translate-y-0', 'top-1/3');
-    } else {
-        error_modal.classList.remove('translate-y-0', 'top-1/3');
-        error_modal.classList.add('-translate-y-full', 'top-0');
-    }
-};
-
-
-// Takes bool, shows regen modal if true, hides if false
-function show_regen_modal(state) {
-    if (state) {
-        regen_modal.classList.remove('-translate-y-full', 'top-0');
-        regen_modal.classList.add('translate-y-0', 'top-1/3');
-    } else {
-        regen_modal.classList.remove('translate-y-0', 'top-1/3');
-        regen_modal.classList.add('-translate-y-full', 'top-0');
-    }
-};
-
-
-// Close all menus/modals when user clicks outside them
-document.addEventListener('click', function(event) {
-    // Close history menu (unless clicked inside menu)
-    if (!history_menu.contains(event.target) && !history_button.contains(event.target)) {
-        open_history_menu(false);
-    }
-    // Close edit modal (unless clicked inside modal)
-    if (!edit_modal.contains(event.target)) {
-        show_edit_modal(false);
-    }
-    // Close error modal (unless clicked inside modal)
-    if (!error_modal.contains(event.target)) {
-        show_error_modal(false);
-    }
-});
-
-
-// Close all menus/modals when user presses escape key
-document.body.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape' || event.keyCode === 27) {
-        open_history_menu(false);
-        show_edit_modal(false);
-        show_error_modal(false);
-    };
-});
-
-
-// Open history when user presses H key outside input field
-document.body.addEventListener('keydown', function(event) {
-    if (event.target.tagName !== 'INPUT') {
-        if (event.key === 'h' || event.key === 'H') {
-            open_history_menu(true);
-        }
-    }
-})
-
 // Request history from backend and add card to history menu for each file
 async function load_history() {
     // Request new history contents
@@ -97,6 +11,12 @@ async function load_history() {
     // Add card div for each item in response
     await populate_history_menu(history_json);
 };
+
+
+// Populate history menu on page load
+document.addEventListener("DOMContentLoaded", function() {
+    load_history();
+});
 
 
 // Takes search_string, requests all history entries with filenames starting
@@ -162,12 +82,6 @@ async function populate_history_menu(history_json) {
     history_contents.offsetHeight;
     history_contents.classList.remove('opacity-0');
 };
-
-
-// Populate history menu on page load
-document.addEventListener("DOMContentLoaded", function() {
-    load_history();
-});
 
 
 // Called by download buttons in history menu
@@ -281,28 +195,3 @@ async function rename_file(button) {
         console.log(data);
     };
 };
-
-
-// Used to close history menu when swiping down from top
-let y_coord_start = null;
-
-// Store Y coordinate when history menu header touched, used to detect
-// user swiping down from top to close menu
-history_header.addEventListener("touchstart", function(event) {
-    y_coord_start = event.touches[0].clientY;
-}, {capture: true});
-
-
-// Compare coordinates on release, close menu if user swiped down >8 px
-history_header.addEventListener("touchmove", function(event) {
-    if (y_coord_start === null) {return};
-    event.preventDefault();
-
-    // Close history menu if user swiped down more than 8 px
-    if ((y_coord_start - event.touches[0].clientY) < -8) {
-        open_history_menu(false);
-    };
-
-    // Reset initial coordinate
-    y_coord_start = null;
-}, {capture: true});
