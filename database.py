@@ -55,9 +55,8 @@ class GeneratedFile(Base):
 
 # Create engine with logging enabled (merged into Kodi log by handler above)
 engine = create_engine(f'sqlite:///{database_path}?timeout=5', echo=True)
-# NOTE: metadata is not created because it causes the script to hang when run
-# within Kodi addon context (cause undetermined, possibly related to VFS)
-# Instead a template database with tables pre-created is copied from /resources
+# Create database tables if they don't exist
+Base.metadata.create_all(engine)
 
 
 # Returns current timestamp in YYYY-MM-DD_HH:MM:SS.MS syntax
