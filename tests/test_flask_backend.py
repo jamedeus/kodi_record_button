@@ -1,9 +1,12 @@
+import os
 import json
+import ffmpeg
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
+from sqlalchemy.exc import OperationalError
 import mock_kodi_modules
 from paths import output_path
-from flask_backend import app, get_bitrate, player
+from flask_backend import app, get_bitrate, player, gen_mp4
 
 
 class TestEndpoints(TestCase):
@@ -83,9 +86,10 @@ class TestEndpoints(TestCase):
         mock_video_info_tag.getTitle.return_value = "Episode Name"
 
         # Create mock request payload
-        payload = json.dumps({'startTime': '69.420'})
+        payload = json.dumps({'startTime': '23.4567'})
 
-        # Mock player object to return the mocked video_info_tag
+        # Mock player object methods to return the mocked video_info_tag, current playtime
+        # Mock gen_mp4 to return True, mock log_generated_file to confirm correct args
         with patch.object(player, 'getVideoInfoTag', return_value=mock_video_info_tag), \
              patch.object(player, 'getTime', return_value=123.4567), \
              patch.object(player, 'getPlayingFile', return_value='/path/to/source.mp4'), \
@@ -101,16 +105,41 @@ class TestEndpoints(TestCase):
             self.assertTrue(mock_log_generated_file.called_once)
             mock_log_generated_file.assert_called_with(
                 '/path/to/source.mp4',
-                '69.420',
-                '54.036699999999996',
+                '23.4567',
+                '100.0',
                 response.get_json().replace('.mp4', ''),
                 'Show Name',
                 'Episode Name'
             )
 
+    def test_submit_sql_error(self):
+        # Create mock video_info_tag simulating TV show playing
+        mock_video_info_tag = MagicMock()
+        mock_video_info_tag.getTVShowTitle.return_value = "Show Name"
+        mock_video_info_tag.getTitle.return_value = "Episode Name"
+
+        # Create mock request payload
+        payload = json.dumps({'startTime': '23.4567'})
+
+        # Mock player object methods to return the mocked video_info_tag, current playtime
+        # Mock gen_mp4 to return True, mock log_generated_file to simulate locked database
+        with patch.object(player, 'getVideoInfoTag', return_value=mock_video_info_tag), \
+             patch.object(player, 'getTime', return_value=123.4567), \
+             patch.object(player, 'getPlayingFile', return_value='/path/to/source.mp4'), \
+             patch('flask_backend.gen_mp4', return_value=True), \
+             patch('flask_backend.log_generated_file', side_effect=OperationalError("", "", "Database locked")):
+
+            response = self.app.post('/submit', data=payload, content_type='application/json')
+            # Confirm status code and error response
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(
+                response.get_json(),
+                {'error': 'Unable to generate file, see Kodi logs for details'}
+            )
+
     def test_submit_nothing_playing(self):
         # Create mock request payload
-        payload = json.dumps({'startTime': '69.420'})
+        payload = json.dumps({'startTime': '23.4567'})
 
         # Mock player object to raise error (simulate nothing playing)
         with patch.object(player, 'getTime', side_effect=RuntimeError("Nothing is playing")):
@@ -146,6 +175,20 @@ class TestEndpoints(TestCase):
             # Confirm status code and response
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.get_json(), 'target_file.mp4')
+
+    def test_regenerate_sql_error(self):
+        # Create mock request payload
+        payload = json.dumps('target_file')
+
+        # Mock player object to raise error (simulate database issue)
+        with patch('flask_backend.get_orm_entry', side_effect=OperationalError("", "", "Database locked")):
+            response = self.app.post('/regenerate', data=payload, content_type='application/json')
+            # Confirm status code and error response
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(
+                response.get_json(),
+                {'error': 'Unable to generate file, see Kodi logs for details'}
+            )
 
     def test_download(self):
         with patch('flask_backend.send_from_directory') as mock_send_from_directory:
@@ -231,3 +274,55 @@ class TestGetBitrate(TestCase):
             mock_addon.return_value.getSetting.return_value = '20'
             # Confirm correct bitrate
             self.assertEqual(get_bitrate(), 2796202)
+
+
+class TestGenMp4(TestCase):
+    def test_generate(self):
+        # Mock ffmpeg, mock get_bitrate to return arbitrary value
+        with patch('flask_backend.get_bitrate', return_value=2796202), \
+             patch('flask_backend.ffmpeg', MagicMock) as mock_ffmpeg:
+
+            # Mock ffmpeg.probe to return a lower bitrate than get_bitrate
+            mock_ffmpeg.probe = MagicMock(return_value={'format': {'bit_rate': '1500000'}})
+            # Mock methods to confirm called with correct args
+            mock_ffmpeg.input = MagicMock()
+            mock_ffmpeg.output = MagicMock()
+            mock_ffmpeg.run = MagicMock()
+
+            # Call function with mock arguments, should return True
+            self.assertTrue(gen_mp4(
+                '/path/to/source.mp4',
+                '23.4567',
+                '100.0',
+                'output',
+                'Show Name',
+                'Episode Name'
+            ))
+
+            # Confirm correct args passed to ffmpeg methods
+            mock_ffmpeg.input.assert_called_with('/path/to/source.mp4')
+            mock_ffmpeg.output.assert_called_with(
+                os.path.join(output_path, 'output.mp4'),
+                ss='23.4567',
+                t='100.0',
+                vcodec="libx264",
+                b="1500000",
+                acodec="aac",
+                ac="2"
+            )
+
+    def test_generate_error(self):
+        # Mock ffmpeg to raise exception, mock get_bitrate and ffmpeg.probe to return arbitrary values
+        with patch('flask_backend.get_bitrate', return_value=2796202), \
+             patch('flask_backend.ffmpeg.probe', return_value={'format': {'bit_rate': '1500000'}}), \
+             patch('flask_backend.ffmpeg.input', side_effect=ffmpeg.Error(cmd="", stdout="", stderr="".encode())):
+
+            # Call function with mock arguments, should return False
+            self.assertFalse(gen_mp4(
+                '/path/to/source.mp4',
+                '23.4567',
+                '100.0',
+                'output',
+                'Show Name',
+                'Episode Name'
+            ))
