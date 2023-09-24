@@ -1,3 +1,6 @@
+[![pipeline status](https://gitlab.com/jamedeus/kodi_record_button/badges/master/pipeline.svg)](https://gitlab.com/jamedeus/kodi_record_button/-/commits/master)
+[![coverage report](https://gitlab.com/jamedeus/kodi_record_button/badges/master/coverage.svg)](https://gitlab.com/jamedeus/kodi_record_button/-/commits/master)
+
 # Record Button Addon
 
 This addon serves a webapp with a record button used to generate clips from currently-playing media.

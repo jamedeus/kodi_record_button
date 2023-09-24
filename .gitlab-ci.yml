@@ -1,0 +1,18 @@
+before_script:
+  - docker info
+  - printenv
+
+stages:
+  - test
+
+test:
+  stage: test
+  tags:
+    - arm64
+  script:
+    - pip3 install pipenv
+    - export PATH=$PATH:/home/gitlab-runner/.local/bin
+    - pipenv install
+    - pipenv run coverage run --source='.' --omit='tests/*,dev_server.py,refresh.py,reset_addon.py,addon.py' -m unittest discover tests
+    - pipenv run coverage report -m --precision=1
+  coverage: '/TOTAL.*\s+(\d+\.\d+\%)$/'
