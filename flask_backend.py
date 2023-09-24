@@ -14,8 +14,6 @@ from database import (
     rename_entry,
     delete_entry,
     is_duplicate,
-    get_older_than,
-    bulk_delete,
     get_orm_entry
 )
 
@@ -216,20 +214,3 @@ def rename():
     rename_entry(old, new)
 
     return jsonify({'filename': new})
-
-
-# Temporary workaround
-@app.get('/autodelete')
-def autodelete():
-    # Read user settings (number of days, whether to keep renamed files)
-    days = int(xbmcaddon.Addon().getSetting('delete_after_days'))
-
-    if xbmcaddon.Addon().getSetting('keep_renamed_files') == 'true':
-        xbmc.log(f"Deleting clips older than {days} days (keeping renamed)", xbmc.LOGINFO)
-        bulk_delete(get_older_than(days), True)
-
-    else:
-        xbmc.log(f"Deleting clips older than {days} days", xbmc.LOGINFO)
-        bulk_delete(get_older_than(days), False)
-
-    return jsonify('done')

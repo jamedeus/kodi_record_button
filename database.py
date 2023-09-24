@@ -1,11 +1,22 @@
 import os
 import xbmc
 import xbmcvfs
+import logging
 import datetime
-from sqlalchemy.pool import NullPool
+import xbmcaddon
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from sqlalchemy import create_engine, Float, String, Boolean, select, desc, or_
 from paths import output_path, database_path
+
+
+# Redirect SQLAlchemy echo to Kodi log
+class SQLAlchemyLogHandler(logging.Handler):
+    def emit(self, record):
+        xbmc.log(self.format(record), level=xbmc.LOGDEBUG)
+
+
+# Somehow this fixes the hang on exit issue when NullPool is not used
+logging.basicConfig(handlers=[SQLAlchemyLogHandler()])
 
 
 class Base(DeclarativeBase):
@@ -42,8 +53,8 @@ class GeneratedFile(Base):
         return f"GeneratedFile(id={self.id!r}, output={self.output!r}, timestamp={self.timestamp!r})"
 
 
-# Create engine with connection pooling disabled (causes Kodi to hang on exit)
-engine = create_engine(f'sqlite:///{database_path}?timeout=5', poolclass=NullPool)
+# Create engine with logging enabled (merged into Kodi log by handler above)
+engine = create_engine(f'sqlite:///{database_path}?timeout=5', echo=True)
 # NOTE: metadata is not created because it causes the script to hang when run
 # within Kodi addon context (cause undetermined, possibly related to VFS)
 # Instead a template database with tables pre-created is copied from /resources
@@ -163,10 +174,6 @@ def get_older_than(days):
     cutoff = cutoff.strftime('%Y-%m-%d_%H:%M:%S.%f')
 
     # Get ORM representations of all entries older than cutoff
-    # TODO this works when called from a Flask endpoint but hangs when called
-    # from the main thread, even if no database connections have been opened
-    # and the flask thread has not been started. Everything inside the context
-    # manager runs, but the context manager never exits. No exception is raised.
     with Session(engine) as session:
         stmt = select(
             GeneratedFile
@@ -200,3 +207,17 @@ def bulk_delete(entries, keep_renamed=False):
 
         session.commit()
     xbmc.log(f"Autodelete complete, deleted {len(entries)} clips", xbmc.LOGINFO)
+
+
+# Called during server startup if autodelete option is enabled
+def autodelete():
+    # Read user settings (number of days, whether to keep renamed files)
+    days = int(xbmcaddon.Addon().getSetting('delete_after_days'))
+
+    if xbmcaddon.Addon().getSetting('keep_renamed_files') == 'true':
+        xbmc.log(f"Deleting clips older than {days} days (keeping renamed)", xbmc.LOGINFO)
+        bulk_delete(get_older_than(days), True)
+
+    else:
+        xbmc.log(f"Deleting clips older than {days} days", xbmc.LOGINFO)
+        bulk_delete(get_older_than(days), False)

@@ -3,11 +3,11 @@ import xbmc
 import socket
 import xbmcgui
 import pyqrcode
-import requests
 import xbmcaddon
 import threading
 from socketserver import ThreadingMixIn
 from wsgiref.simple_server import make_server, WSGIServer
+from database import get_older_than, bulk_delete, autodelete
 from flask_backend import app
 from paths import qr_path
 
@@ -106,10 +106,9 @@ def run_server():
     server_thread.start()
 
     # Run autodelete if enabled
-    # TODO temporary workaround, see note in database.py
     if xbmcaddon.Addon().getSetting('autodelete') == 'true':
         xbmc.log("Autodelete enabled", xbmc.LOGINFO)
-        requests.get(f'http://{host}:{port}/autodelete')
+        autodelete()
 
     # Generate web interface QR code link
     generate_qr_code_link(xbmc.getIPAddress(), port)
