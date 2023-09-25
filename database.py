@@ -6,6 +6,7 @@ import datetime
 import xbmcaddon
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from sqlalchemy import create_engine, Float, String, Boolean, select, desc, or_
+from kodi_gui import show_notification
 from paths import output_path, database_path
 
 
@@ -189,6 +190,9 @@ def get_older_than(days):
 # Takes list of ORM objects, deletes all from db
 # Optional bool arg prevents user-renamed files from being deleted
 def bulk_delete(entries, keep_renamed=False):
+    # Track number of deleted files
+    deleted = 0
+
     with Session(engine) as session:
         for entry in entries:
             # Skip renamed files if setting enabled
@@ -203,9 +207,14 @@ def bulk_delete(entries, keep_renamed=False):
 
             # Delete from database
             session.delete(entry)
+            deleted += 1
 
         session.commit()
-    xbmc.log(f"Autodelete complete, deleted {len(entries)} clips", xbmc.LOGINFO)
+
+    # Show notification if clips were deleted
+    if deleted > 0:
+        show_notification("Record Button", f"Automatically deleted {deleted} old clips", 5000)
+    xbmc.log(f"Autodelete complete, deleted {deleted} clips", xbmc.LOGINFO)
 
 
 # Called during server startup if autodelete option is enabled
