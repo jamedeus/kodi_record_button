@@ -6,7 +6,7 @@ import datetime
 import xbmcaddon
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from sqlalchemy import create_engine, Float, String, Boolean, select, desc, or_
-from kodi_gui import show_notification
+from kodi_gui import autodelete_notification
 from paths import output_path, database_path
 
 
@@ -213,7 +213,7 @@ def bulk_delete(entries, keep_renamed=False):
 
     # Show notification if clips were deleted
     if deleted > 0:
-        show_notification("Record Button", f"Automatically deleted {deleted} old clips", 5000)
+        autodelete_notification(deleted)
     xbmc.log(f"Autodelete complete, deleted {deleted} clips", xbmc.LOGINFO)
 
 

@@ -8,4 +8,9 @@
         <setting id="delete_after_days" label="Delete clips older than (days)" type="number" default="30" visible="eq(-1,true)" subsetting="true"/>
         <setting id="keep_renamed_files" label="Don't delete renamed clips" type="bool" default="true" visible="eq(-2,true)" subsetting="true"/>
     </category>
+    <category label="Notifications">
+        <setting id="notifications_enabled" label="Enable Notifications" type="bool" default="true"/>
+        <setting id="generate_notification" label="Show notification when finished generating clip" type="bool" default="true" visible="eq(-1,true)" subsetting="true"/>
+        <setting id="autodelete_notification" label="Show notification when old clips automatically deleted" type="bool" default="true" visible="eq(-2,true)" subsetting="true"/>
+    </category>
 </settings>

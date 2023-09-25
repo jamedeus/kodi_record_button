@@ -5,6 +5,7 @@ import string
 import ffmpeg
 import random
 import socket
+import xbmcgui
 import pyqrcode
 import xbmcaddon
 import threading
@@ -13,7 +14,7 @@ from sqlalchemy.exc import OperationalError
 from wsgiref.simple_server import make_server, WSGIServer
 from flask import Flask, request, render_template, jsonify, send_from_directory
 from paths import output_path, qr_path
-from kodi_gui import address_unavailable_error
+from kodi_gui import address_unavailable_error, generate_notification, show_notification
 from database import (
     log_generated_file,
     load_history_json,
@@ -53,6 +54,12 @@ def address_available(host, port):
 def wait_for_address_release(host, port, timeout=None):
     start_time = time.time()
     while not address_available(host, port):
+        show_notification(
+            "Record Button",
+            f"Configured address {host}:{port} is not available, waiting...",
+            5000,
+            xbmcgui.NOTIFICATION_WARNING
+        )
         xbmc.log(f"Waiting for {host}:{port} to open...", xbmc.LOGINFO)
         time.sleep(5)
         if timeout and time.time() - start_time > timeout:
@@ -171,6 +178,7 @@ def submit():
         # Generate, write params to database and return filename if successful
         if gen_mp4(source, data["startTime"], str(duration), filename, show_name, episode_name):
             log_generated_file(source, data["startTime"], str(duration), filename, show_name, episode_name)
+            generate_notification()
             return jsonify(f'{filename}.mp4')
 
     except RuntimeError as e:
