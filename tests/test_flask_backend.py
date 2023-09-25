@@ -1,12 +1,168 @@
 import os
 import json
 import ffmpeg
+import threading
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from sqlalchemy.exc import OperationalError
 import mock_kodi_modules
-from paths import output_path
-from flask_backend import app, get_bitrate, player, gen_mp4
+from paths import output_path, qr_path
+from flask_backend import (
+    app,
+    get_bitrate,
+    player,
+    gen_mp4,
+    address_available,
+    wait_for_address_release,
+    run_server,
+    generate_qr_code_link
+)
+
+
+class TestAddressChecks(TestCase):
+    def test_address_available(self):
+        # Should return True for unused port
+        self.assertTrue(address_available('0.0.0.0', 8888))
+        # Should return False for reserved port
+        self.assertFalse(address_available('0.0.0.0', 443))
+
+    def test_wait_for_address_release(self):
+        # Should return True immediately for available port
+        self.assertTrue(wait_for_address_release('0.0.0.0', 8888, 5))
+        # Should return False after timeout seconds (5) for reserved port
+        self.assertFalse(wait_for_address_release('0.0.0.0', 443, 5))
+
+
+class TestRunServer(TestCase):
+    def test_run_server(self):
+        # Get number of running threads before starting server
+        threads_before = len(threading.enumerate())
+
+        # Create mock getSettings that returns available address + autodelete enabled
+        def mock_get_settings(setting):
+            if setting == 'flask_host':
+                return '0.0.0.0'
+            elif setting == 'flask_port':
+                return '8888'
+            elif setting == 'autodelete':
+                return 'true'
+
+        # Mock methods called by run_server to confirm they were called
+        with patch('flask_backend.autodelete', MagicMock()) as mock_autodelete, \
+             patch('flask_backend.generate_qr_code_link', MagicMock()) as mock_gen_qr, \
+             patch('flask_backend.address_unavailable_error', MagicMock()) as mock_addr_error, \
+             patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:
+
+            # Apply mock getSettings from above
+            mock_addon.return_value.getSetting = mock_get_settings
+
+            # Start server, confirm return value is not None
+            server = run_server(timeout=1)
+            self.assertIsNotNone(server)
+
+            # Confirm that autodelete and generate_qr_code_link were called
+            self.assertTrue(mock_autodelete.called)
+            self.assertTrue(mock_gen_qr.called)
+
+            # Confirm that address_unavailable_error was NOT called
+            self.assertFalse(mock_addr_error.called)
+
+        # Confirm that a new thread was created
+        self.assertEqual(len(threading.enumerate()), threads_before + 1)
+
+        # Close the server, confirm new thread stops
+        server.shutdown()
+        server.server_close()
+        self.assertEqual(len(threading.enumerate()), threads_before)
+
+    def test_run_server_autodelete_disabled(self):
+        # Get number of running threads before starting server
+        threads_before = len(threading.enumerate())
+
+        # Create mock getSettings that returns available address + autodelete disabled
+        def mock_get_settings(setting):
+            if setting == 'flask_host':
+                return '0.0.0.0'
+            elif setting == 'flask_port':
+                return '8888'
+            elif setting == 'autodelete':
+                return 'false'
+
+        # Mock methods called by run_server to confirm they were called
+        with patch('flask_backend.autodelete', MagicMock()) as mock_autodelete, \
+             patch('flask_backend.generate_qr_code_link', MagicMock()) as mock_gen_qr, \
+             patch('flask_backend.address_unavailable_error', MagicMock()) as mock_addr_error, \
+             patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:
+
+            # Apply mock getSettings from above
+            mock_addon.return_value.getSetting = mock_get_settings
+
+            # Start server, confirm return value is not None
+            server = run_server(timeout=1)
+            self.assertIsNotNone(server)
+
+            # Confirm that autodelete and generate_qr_code_link was called
+            self.assertTrue(mock_gen_qr.called)
+
+            # Confirm that address_unavailable_error and autodelete were NOT called
+            self.assertFalse(mock_addr_error.called)
+            self.assertFalse(mock_autodelete.called)
+
+        # Confirm that a new thread was created
+        self.assertEqual(len(threading.enumerate()), threads_before + 1)
+
+        # Close the server, confirm new thread stops
+        server.shutdown()
+        server.server_close()
+        self.assertEqual(len(threading.enumerate()), threads_before)
+
+    def test_run_server_address_unavailable(self):
+        # Get number of running threads before starting server
+        threads_before = len(threading.enumerate())
+
+        # Create mock getSettings that returns unavailable address
+        def mock_get_settings(setting):
+            if setting == 'flask_host':
+                return '0.0.0.0'
+            elif setting == 'flask_port':
+                return '443'
+
+        # Mock methods called by run_server to confirm they were NOT called
+        with patch('flask_backend.autodelete', MagicMock()) as mock_autodelete, \
+             patch('flask_backend.generate_qr_code_link', MagicMock()) as mock_gen_qr, \
+             patch('flask_backend.address_unavailable_error', MagicMock()) as mock_addr_error, \
+             patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:
+
+            # Apply mock getSettings from above
+            mock_addon.return_value.getSetting = mock_get_settings
+
+            # Start server, confirm return value is None
+            server = run_server(timeout=1)
+            self.assertIsNone(server)
+
+            # Confirm that autodelete and generate_qr_code_link were NOT called
+            self.assertFalse(mock_autodelete.called)
+            self.assertFalse(mock_gen_qr.called)
+
+            # Confirm that address_unavailable_error was called
+            self.assertTrue(mock_addr_error.called)
+
+        # Confirm no new thread was created
+        self.assertEqual(len(threading.enumerate()), threads_before)
+
+
+class TestGenerateQrCodeLink(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        # Delete generated image
+        os.remove(qr_path)
+
+    def test_generate_qr_code_link(self):
+        # Confirm output image does not exist
+        self.assertFalse(os.path.exists(qr_path))
+        # Generate QR code, confirm path exists
+        generate_qr_code_link('123.45.67.89', 8888)
+        self.assertTrue(os.path.exists(qr_path))
 
 
 class TestEndpoints(TestCase):

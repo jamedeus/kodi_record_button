@@ -1,12 +1,19 @@
 import os
+import time
 import xbmc
 import string
 import ffmpeg
 import random
+import socket
+import pyqrcode
 import xbmcaddon
+import threading
+from socketserver import ThreadingMixIn
 from sqlalchemy.exc import OperationalError
+from wsgiref.simple_server import make_server, WSGIServer
 from flask import Flask, request, render_template, jsonify, send_from_directory
-from paths import output_path
+from paths import output_path, qr_path
+from kodi_gui import address_unavailable_error
 from database import (
     log_generated_file,
     load_history_json,
@@ -14,8 +21,10 @@ from database import (
     rename_entry,
     delete_entry,
     is_duplicate,
-    get_orm_entry
+    get_orm_entry,
+    autodelete
 )
+
 
 # Read currently-playing info
 player = xbmc.Player()
@@ -25,6 +34,73 @@ app = Flask(__name__, static_url_path='', static_folder='node_modules')
 
 # Disable template caching TODO remove in prod
 app.jinja_env.cache = {}
+
+
+# Multi-threaded WSGIServer
+class ThreadedWSGIServer(ThreadingMixIn, WSGIServer):
+    pass
+
+
+# Takes host and port, returns True if available, False if in use
+def address_available(host, port):
+    xbmc.log(f"Checking {host}:{port} availablility...", xbmc.LOGINFO)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return not s.connect_ex((host, port)) == 0
+
+
+# Takes host and port, check if available every 5 seconds, return True when available
+# If timeout (seconds) given returns False after timeout seconds
+def wait_for_address_release(host, port, timeout=None):
+    start_time = time.time()
+    while not address_available(host, port):
+        xbmc.log(f"Waiting for {host}:{port} to open...", xbmc.LOGINFO)
+        time.sleep(5)
+        if timeout and time.time() - start_time > timeout:
+            xbmc.log(f"Timed out waiting for {host}:{port}", xbmc.LOGINFO)
+            return False
+
+    xbmc.log(f"Address {host}:{port} available", xbmc.LOGINFO)
+    return True
+
+
+# Starts flask server, returns server object so it can be stopped later
+# Optional timeout arg determines how many seconds to wait if address unavailable
+def run_server(timeout=120):
+    # Read address from settings.xml
+    # Reinstantiate Addon() to avoid caching issue
+    host = xbmcaddon.Addon().getSetting('flask_host')
+    port = int(xbmcaddon.Addon().getSetting('flask_port'))
+
+    # Check if address is available, wait timeout seconds (default = 2 minutes)
+    if not address_available(host, port):
+        # Show error if address still in use after timeout seconds
+        if not wait_for_address_release(host, port, timeout):
+            address_unavailable_error(host, port)
+            return None
+
+    # Create WSGIServer serving flask app on host:port
+    httpd = make_server(host, port, app, server_class=ThreadedWSGIServer)
+
+    # Run server in new thread
+    server_thread = threading.Thread(target=httpd.serve_forever)
+    server_thread.start()
+    xbmc.log(f"Web server started on {host}:{port}", xbmc.LOGINFO)
+
+    # Run autodelete if enabled
+    if xbmcaddon.Addon().getSetting('autodelete') == 'true':
+        xbmc.log("Autodelete enabled", xbmc.LOGINFO)
+        autodelete()
+
+    # Generate web interface QR code link
+    generate_qr_code_link(xbmc.getIPAddress(), port)
+
+    return httpd
+
+
+# Takes IP and port, creates QR code link, writes PNG to userdata dir
+def generate_qr_code_link(ip, port):
+    qr = pyqrcode.create(f"http://{ip}:{port}")
+    qr.png(qr_path, scale=8, quiet_zone=1)
 
 
 # Serve non-node_modules static files
