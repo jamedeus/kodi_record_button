@@ -4,25 +4,8 @@ import os
 import json
 import shutil
 import sqlite3
-import zipfile
 import requests
-
-pwd = os.path.dirname(os.path.realpath(__file__))
-git = os.path.split(pwd)[0]
-
-
-exclude_from_zip = [
-    'dev_server.py',
-    'package.json',
-    'package-lock.json',
-    'play_test_file.py',
-    'refresh.py',
-    'reset_addon.py',
-    'tailwind.config.js',
-    'test_history.json',
-    'mock_kodi_modules.py',
-    'test_flask_backend.py'
-]
+from package_addon import zip_addon
 
 
 def uninstall_addon():
@@ -71,27 +54,7 @@ def exit_kodi():
         print("Connection error when exiting Kodi")
 
 
-# Re-zip repository, write to ~/test.zip
-def re_zip_addon():
-    # Create zip file and get handler
-    zip_path = os.path.join(os.path.expanduser("~/"), "test.zip")
-    zip_handler = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
-
-    # Add all repo files to zip without including repo dir
-    for root, dirs, files in os.walk(pwd):
-        for file in files:
-            # Don't add dev scripts
-            if file in exclude_from_zip or file.endswith('.pyc'):
-                continue
-
-            abs_path = os.path.join(root, file)
-            rel_path = os.path.relpath(abs_path, os.path.join(pwd, '..'))
-            zip_handler.write(abs_path, rel_path)
-
-    zip_handler.close()
-
-
 if __name__ == "__main__":
     exit_kodi()
     uninstall_addon()
-    re_zip_addon()
+    zip_addon()
