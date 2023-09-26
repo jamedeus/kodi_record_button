@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# This script detects if the commit contains files which will trigger the
+# release pipeline. If it does the commit is tagged, the commit message is
+# added to changelog.txt, and changelog.txt is added to the commit
+#
+# Installation: Add the following line to .git/hooks/post-commit:
+# nohup hooks/post-commit >/dev/null 2>&1 &
+
+
+# Check if addon files were included in commit
+# Matches all jpg and png, all files in resources, static, and templates, files
+# named addon with any extension, and all full .py filenames listed in regex
+ADDON_FILES=$(git diff --name-only HEAD^ HEAD | grep -E ".(jpg|png)$|^(resources|static|templates).|^addon.|^database.py$|^flask_backend.py$|^kodi_gui.py$|^paths.py$")
+
+# Check if changelog was included in commit
+CHANGELOG=$(git diff --name-only HEAD^ HEAD | grep -E "changelog.txt")
+
+# Only run if the commit includes addon files but NOT changelog
+# Prevents an infinite loop when the commit is amended to include changelog,
+# which triggers this script a second time
+if [ ! -z "$ADDON_FILES" ] && [ -z "$CHANGELOG" ]; then
+    # Increment most-recent tag
+    LAST_TAG=$(git tag | sort -V | tail -n 1)
+    NEW_TAG=$(echo $LAST_TAG | awk -F. '{$NF = $NF + 1;} 1' OFS=.)
+
+    # Add first line of commit message to changelog, add to commit
+    COMMIT_MESSAGE=$(git log -1 --format=format:"%s")
+    printf "$NEW_TAG - $COMMIT_MESSAGE\n" >> changelog.txt
+    git add changelog.txt
+    git commit --amend --no-edit
+
+    # Tag new commit
+    git tag $NEW_TAG
+fi

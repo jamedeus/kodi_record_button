@@ -25,6 +25,8 @@ build:
   stage: build
   tags:
     - arm64
+  needs:
+    - job: test
   rules:
     - changes:
         - 'addon.*'
@@ -37,14 +39,14 @@ build:
         - 'resources/*'
         - 'static/*'
         - 'templates/*'
-        - '.gitlab-ci.yml'
+    - when: never
   script:
     - npm install
     - python3 -c "from package_addon import zip_addon; zip_addon()"
-    - mv kodi_record_button.zip kodi_record_button-v$CI_PIPELINE_IID.zip
+    - mv kodi_record_button.zip kodi_record_button-v$CI_COMMIT_TAG.zip
   artifacts:
     paths:
-      - kodi_record_button-v$CI_PIPELINE_IID.zip
+      - kodi_record_button-v$CI_COMMIT_TAG.zip
 
 # Push zip to gitlab as new release
 release:
@@ -66,15 +68,15 @@ release:
         - 'resources/*'
         - 'static/*'
         - 'templates/*'
-        - '.gitlab-ci.yml'
+    - when: never
   script:
-    - echo "Creating release for $CI_PIPELINE_IID"
+    - echo "Creating release for $CI_COMMIT_TAG"
   release:
-    name: 'Release $CI_PIPELINE_IID'
-    description: 'Release $CI_PIPELINE_IID'
-    tag_name: '$TAG'
+    name: 'Release $CI_COMMIT_TAG'
+    description: '# $CI_COMMIT_TAG - $CI_COMMIT_TITLE<br/><br/>[Download addon zip]($CI_JOB_URL/artifacts/raw/kodi_record_button-v$CI_COMMIT_TAG.zip)'
+    tag_name: '$CI_COMMIT_TAG'
     ref: '$CI_COMMIT_SHA'
     assets:
       links:
-        - name: 'addon-v$CI_PIPELINE_IID.zip'
-          url: '$CI_JOB_URL/artifacts/raw/kodi_record_button-v$CI_PIPELINE_IID.zip'
+        - name: 'kodi_record_button-v$CI_COMMIT_TAG.zip'
+          url: '$CI_JOB_URL/artifacts/raw/kodi_record_button-v$CI_COMMIT_TAG.zip'
