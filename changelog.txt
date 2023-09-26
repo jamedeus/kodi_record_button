@@ -1,1 +1,2 @@
-0.0.0 Proof of concept
+0.0 - Add notification settings, more notifications
+0.1 - Update screenshots and description

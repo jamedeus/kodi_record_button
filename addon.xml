@@ -8,8 +8,12 @@
 	</extension>
 	<extension point="xbmc.addon.metadata">
 		<platform>all</platform>
-		<summary lang="en">Record Button webapp</summary>
-		<description lang="en">Serve a webapp with a record button to generate clips</description>
+		<summary lang="en">Record Button</summary>
+		<description lang="en">This addon serves a web interface with a record button to generate clips from your Kodi library.
+
+Scan the QR code to open the app, then hold the record button while media is playing in Kodi.
+
+Generated clips can be downloaded at any time through the history menu.</description>
 		<license>GNU General Public License, v2</license>
 		<language></language>
 		<source>https://gitlab.com/jamedeus/kodi_record_button</source>
@@ -19,6 +23,9 @@
 			<icon>icon.png</icon>
 			<fanart>fanart.jpg</fanart>
 			<screenshot>resources/screenshot-01.jpg</screenshot>
+			<screenshot>resources/screenshot-02.jpg</screenshot>
+			<screenshot>resources/screenshot-03.png</screenshot>
+			<screenshot>resources/screenshot-04.png</screenshot>
 		</assets>
 	</extension>
 	<extension point="xbmc.service" library="addon.py" start="login"/>
