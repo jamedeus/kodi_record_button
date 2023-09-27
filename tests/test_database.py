@@ -4,7 +4,10 @@ import unittest
 from sqlalchemy.orm import Session
 from unittest.mock import patch, MagicMock
 import mock_kodi_modules
+from paths import database_path
 from database import (
+    get_mysql_url,
+    get_configured_engine,
     Base,
     GeneratedFile,
     engine,
@@ -19,6 +22,57 @@ from database import (
     is_duplicate,
     autodelete
 )
+
+
+class TestDatabaseBackends(unittest.TestCase):
+    def test_get_mysql_url(self):
+        # Create mock getSettings that returns MySQL credentials
+        def mock_get_settings(setting):
+            if setting == 'mysql_user':
+                return 'admin'
+            elif setting == 'mysql_pass':
+                return 'hunter2'
+            elif setting == 'mysql_host':
+                return '127.0.0.1'
+            elif setting == 'mysql_port':
+                return '8921'
+            elif setting == 'mysql_db':
+                return 'mydb'
+
+        # Call get_mysql_url with mocked getSettings
+        with patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:
+            mock_addon.return_value.getSetting = mock_get_settings
+            url = get_mysql_url()
+            # Confirm correct dialect and driver
+            self.assertEqual(url.get_backend_name(), 'mysql')
+            self.assertEqual(url.get_driver_name(), 'pymysql')
+            # Confirm correct user and address params
+            self.assertEqual(url.username, 'admin')
+            self.assertEqual(url.password, 'hunter2')
+            self.assertEqual(url.host, '127.0.0.1')
+            self.assertEqual(url.port, 8921)
+            self.assertEqual(url.database, 'mydb')
+
+    def test_create_engine(self):
+        # Call with no mock, should return local sqlite database
+        engine = get_configured_engine()
+        self.assertEqual(engine.name, 'sqlite')
+        self.assertEqual(engine.driver, 'pysqlite')
+        self.assertEqual(str(engine.url), 'sqlite:///./history.db?timeout=5')
+        self.assertEqual(engine.url.database, database_path)
+
+    def test_create_engine_mysql(self):
+        # Mock getSettings to return MySQL
+        # Mock other methods to confirm called
+        with patch('database.create_engine', MagicMock()) as mock_create_engine, \
+             patch('database.get_mysql_url', MagicMock()) as mock_get_mysql_url, \
+             patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:
+
+            mock_addon.return_value.getSetting.return_value = 'MySQL'
+            # Get engine, confirm correct methods called
+            engine = get_configured_engine()
+            self.assertTrue(mock_create_engine.called)
+            self.assertTrue(mock_get_mysql_url.called)
 
 
 class TestDatabase(unittest.TestCase):

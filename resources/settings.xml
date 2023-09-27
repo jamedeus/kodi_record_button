@@ -13,4 +13,13 @@
         <setting id="generate_notification" label="Show notification when finished generating clip" type="bool" default="true" visible="eq(-1,true)" subsetting="true"/>
         <setting id="autodelete_notification" label="Show notification when old clips automatically deleted" type="bool" default="true" visible="eq(-2,true)" subsetting="true"/>
     </category>
+    <category label="Database">
+        <setting id="db_type" type="select" label="Database Type (advanced)" values="SQLite|MySQL" default="SQLite"/>
+        <setting id="mysql_user" label="MySQL Username" type="text" visible="eq(-1,MySQL)" subsetting="true"/>
+        <setting id="mysql_pass" label="MySQL Password" type="text" visible="eq(-2,MySQL)" subsetting="true"/>
+        <setting id="mysql_host" label="MySQL Address" type="ipaddress" visible="eq(-3,MySQL)" subsetting="true"/>
+        <setting id="mysql_port" label="MySQL Port" type="number" default="3306" visible="eq(-4,MySQL)" subsetting="true"/>
+        <setting id="mysql_db" label="MySQL Database name" type="text" visible="eq(-5,MySQL)" subsetting="true"/>
+    </category>
 </settings>
+

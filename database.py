@@ -4,10 +4,50 @@ import xbmcvfs
 import logging
 import datetime
 import xbmcaddon
+from sqlalchemy import URL
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from sqlalchemy import create_engine, Float, String, Boolean, select, desc, or_
 from kodi_gui import autodelete_notification
 from paths import output_path, database_path
+
+
+# Reads MySQL address and credentials from Kodi settings, returns URL object
+def get_mysql_url():
+    addon = xbmcaddon.Addon()
+    return URL.create(
+        'mysql+pymysql',
+        username=addon.getSetting('mysql_user'),
+        password=addon.getSetting('mysql_pass'),
+        host=addon.getSetting('mysql_host'),
+        port=addon.getSetting('mysql_port'),
+        database=addon.getSetting('mysql_db')
+    )
+
+
+# Returns SQLAlchemy Engine for currently-configured database (Kodi settings)
+# All databases echo to Kodi logs, see SQLAlchemyLogHandler
+def get_configured_engine():
+    db_type = xbmcaddon.Addon().getSetting('db_type')
+    if db_type == "SQLite":
+        # Workaround: return existing sqlite engine (creating new enginge makes
+        # Kodi hang on exit, leaving open doesn't seem to have downsides)
+        global local_engine
+        return local_engine
+    elif db_type == "MySQL":
+        # Create new engine for remote MySQL server
+        xbmc.log("Database: Creating MySQL engine", xbmc.LOGINFO)
+        return create_engine(get_mysql_url(), poolclass=NullPool, echo=True)
+
+
+# Called when user changes settings, replaces the global engine object used by
+# all functions with appropriate engine for current settings
+def replace_engine():
+    global engine
+    # Get new engine based on current settings
+    engine = get_configured_engine()
+    # Create database tables if they don't exist
+    Base.metadata.create_all(engine)
 
 
 # Redirect SQLAlchemy echo to Kodi log
@@ -54,8 +94,16 @@ class GeneratedFile(Base):
         return f"GeneratedFile(id={self.id!r}, output={self.output!r}, timestamp={self.timestamp!r})"
 
 
-# Create engine with logging enabled (merged into Kodi log by handler above)
-engine = create_engine(f'sqlite:///{database_path}?timeout=5', echo=True)
+# Create engine for local sqlite database
+# This persists even if database type is changed in settings because closing and
+# re-opening causes Kodi to hang on exit
+local_engine = create_engine(f'sqlite:///{database_path}?timeout=5', echo=True)
+
+# Create engine for database configured in Kodi settings, used by functions below
+# Will return local_engine if SQLite is configured, otherwise returns new engine
+# for configured external database (MySQL or PostgreSQL)
+engine = get_configured_engine()
+
 # Create database tables if they don't exist
 Base.metadata.create_all(engine)
 

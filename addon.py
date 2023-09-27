@@ -1,5 +1,6 @@
 import xbmc
 from paths import qr_path
+from database import replace_engine
 from flask_backend import run_server
 from kodi_gui import show_notification
 
@@ -41,11 +42,18 @@ def main():
         elif monitor.changed:
             xbmc.log("Restarting flask...", xbmc.LOGINFO)
             show_notification("Record Button", "Restarting web server")
+
             # Shut down old server to release address
             if server_instance:
                 server_instance.shutdown()
                 server_instance.server_close()
                 xbmc.log("Old server stopped", xbmc.LOGINFO)
+
+            # Close old database and get new engine before starting new server thread
+            xbmc.log("Restarting database...", xbmc.LOGINFO)
+            replace_engine()
+            xbmc.log("Finished restarting database", xbmc.LOGINFO)
+
             # Start new server (waits up to 2 minutes if address is unavailable)
             server_instance = run_server()
             xbmc.log("Finished restarting flask...", xbmc.LOGINFO)
