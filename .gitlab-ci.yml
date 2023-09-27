@@ -4,10 +4,7 @@ before_script:
 
 stages:
   - test
-  - build
-  - release
 
-# Run unit tests
 test:
   stage: test
   tags:
@@ -19,64 +16,3 @@ test:
     - pipenv run python3.10 -m coverage run --source='flask_backend,database' -m unittest discover tests
     - pipenv run python3.10 -m coverage report -m --precision=1
   coverage: '/TOTAL.*\s+(\d+\.\d+\%)$/'
-
-# Create installable zip
-build:
-  stage: build
-  tags:
-    - arm64
-  needs:
-    - job: test
-  rules:
-    - changes:
-        - 'addon.*'
-        - 'database.py'
-        - 'fanart.jpg'
-        - 'flask_backend.py'
-        - 'icon.png'
-        - 'kodi_gui.py'
-        - 'paths.py'
-        - 'resources/*'
-        - 'static/*'
-        - 'templates/*'
-    - when: never
-  script:
-    - npm install
-    - python3 -c "from package_addon import zip_addon; zip_addon()"
-    - mv kodi_record_button.zip kodi_record_button-v$CI_COMMIT_TAG.zip
-  artifacts:
-    paths:
-      - kodi_record_button-v$CI_COMMIT_TAG.zip
-
-# Push zip to gitlab as new release
-release:
-  stage: release
-  tags:
-    - arm64
-  needs:
-    - job: build
-      artifacts: true
-  rules:
-    - changes:
-        - 'addon.*'
-        - 'database.py'
-        - 'fanart.jpg'
-        - 'flask_backend.py'
-        - 'icon.png'
-        - 'kodi_gui.py'
-        - 'paths.py'
-        - 'resources/*'
-        - 'static/*'
-        - 'templates/*'
-    - when: never
-  script:
-    - echo "Creating release for $CI_COMMIT_TAG"
-  release:
-    name: 'Release $CI_COMMIT_TAG'
-    description: '# $CI_COMMIT_TAG - $CI_COMMIT_TITLE<br/><br/>[Download addon zip]($CI_JOB_URL/artifacts/raw/kodi_record_button-v$CI_COMMIT_TAG.zip)'
-    tag_name: '$CI_COMMIT_TAG'
-    ref: '$CI_COMMIT_SHA'
-    assets:
-      links:
-        - name: 'kodi_record_button-v$CI_COMMIT_TAG.zip'
-          url: '$CI_JOB_URL/artifacts/raw/kodi_record_button-v$CI_COMMIT_TAG.zip'
