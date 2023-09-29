@@ -1,6 +1,6 @@
 // Called when user clicks record button
 async function startRecording() {
-    // Change background to red
+    // Change button background to red
     record_button.classList.remove("bg-slate-950");
     record_button.classList.add("bg-red-600", "scale-110");
 
@@ -19,13 +19,18 @@ async function startRecording() {
     download_div.classList.add("opacity-0", "pointer-events-none")
     download_div.classList.remove("show-result")
 };
-record_button.addEventListener('mousedown', startRecording);
-record_button.addEventListener('touchstart', startRecording);
+record_button.addEventListener('pointerdown', () => {
+    // Do not run if already recording (prevents overwriting start_time if record
+    // button becomes stuck and user clicks again to stop recording)
+    if (!recording) {
+        startRecording();
+    };
+});
 
 
 // Called when user releases click on record button
 async function stopRecording() {
-    // Change background back
+    // Change button background back
     record_button.classList.remove("bg-red-600", "scale-110");
     record_button.classList.add("bg-slate-950");
 
@@ -56,8 +61,22 @@ async function stopRecording() {
     record_spinner.classList.remove("opacity-100");
     record_spinner.classList.add("opacity-0");
 };
-record_button.addEventListener('mouseup', stopRecording);
-record_button.addEventListener('touchend', stopRecording);
+// Stop recording when user releases click anywhere on page while recording
+// Full-page listener prevents stuck record button if cursor moves during click
+document.addEventListener('pointerup', () => {
+    if (recording) {
+        stopRecording();
+    };
+});
+
+
+// Ignore touch scroll while recording (prevents stuck record button on mobile
+// if user moves finger around while holding button)
+document.addEventListener('touchmove', function(event) {
+    if (recording) {
+        event.preventDefault();
+    };
+}, { passive: false });
 
 
 // Called by stopRecording, send post to backend, receive generated filename
