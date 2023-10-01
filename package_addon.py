@@ -11,6 +11,10 @@ pwd = os.path.dirname(os.path.realpath(__file__))
 lib = os.path.join(pwd, '.venv', 'lib', 'python3.10', 'site-packages')
 
 exclude_from_zip = [
+    '.coverage',
+    '.env',
+    '.gitignore',
+    '.gitlab-ci.yml',
     'kodi_record_button.zip',
     'dev_server.py',
     'package_addon.py',
