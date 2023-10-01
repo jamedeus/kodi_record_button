@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import shutil
 import zipfile
+import subprocess
 
 # Absolute path to repository root
 pwd = os.path.dirname(os.path.realpath(__file__))
 
-# Absolute path to venv site packages
-lib = os.path.join(pwd, '.venv', 'lib', 'python3.10', 'site-packages')
+# Absolute path to local site packages (installed automatically)
+lib = os.path.join(pwd, '.zip_dependencies')
 
 exclude_from_zip = [
     '.coverage',
@@ -54,12 +56,15 @@ def zip_addon():
             rel_path = os.path.relpath(abs_path, os.path.join(pwd, '..'))
             zip_handler.write(abs_path, rel_path)
 
-    # Add all pipenv dependencies
+    # Install dependencies to local site packages folder
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt', '--target', lib])
+
+    # Add all dependencies to zip
     for root, dirs, files in os.walk(lib):
         for file in files:
             abs_path = os.path.join(root, file)
             # Move dependencies to repository root where python can find them
-            # Example: kodi_record_button/.venv/lib/python3.10/site-packages/sqlalchemy > kodi_record_button/sqlalchemy
+            # Example: kodi_record_button/.zip_dependencies/sqlalchemy > kodi_record_button/sqlalchemy
             rel_path = os.path.join('kodi_record_button', os.path.relpath(abs_path, lib))
             zip_handler.write(abs_path, rel_path)
 
