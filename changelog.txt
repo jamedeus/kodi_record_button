@@ -2,3 +2,4 @@
 0.1 - Update screenshots and description
 0.2 - Add MySQL support in addition to SQLite
 0.3 - Record button bug fixes
+0.4 - UI improvements

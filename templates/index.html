@@ -31,7 +31,7 @@
             <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-3 text-lg font-bold rounded-lg">Download</a>
             <label for="filename-input" class="text-md font-light mb-1"><b>Rename (optional):</b></label>
             <div class="flex">
-                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-500 rounded-l-md rounded-r-none text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="test.mp4" name="filename-input" autocomplete="off">
+                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-500 rounded-l-md rounded-r-none text-md text-center appearance-none focus:placeholder-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="" name="filename-input" autocomplete="off">
                 <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="rename_file(this);"><i class="fas fa-pencil-alt m-auto"></i></button>
             </div>
         </div>
@@ -55,7 +55,7 @@
                 </div>
                 <!-- Search -->
                 <div class="flex pb-3">
-                    <input id="search-input" type="text" class="mx-auto p-2 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="Search..." autocomplete="off">
+                    <input id="search-input" type="text" class="mx-auto p-2 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center appearance-none focus:bg-zinc-950 focus:placeholder-zinc-950 focus:outline-none focus:ring focus:ring-blue-600" placeholder="Search..." autocomplete="off">
                 </div>
             </div>
 
@@ -80,7 +80,7 @@
             <div class="flex flex-col mx-auto py-3 px-10">
                 <h2 class="text-sm">Original name:</h2>
                 <h1 id="original-filename" class="text-xl font-bold"></h1>
-                <input id="edit-input" type="text" class="p-2 my-3 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center focus:outline-none focus:ring-2 focus:ring-blue-700" placeholder="enter new name" name="filename-input" autocomplete="off">
+                <input id="edit-input" type="text" class="p-2 my-3 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center appearance-none focus:outline-none focus:ring focus:ring-blue-600" placeholder="enter new name" name="filename-input" autocomplete="off">
                 <button id="edit-button" class="bg-green-600 rounded-lg py-2 px-3 mx-auto font-bold" onclick="rename_file(this);">Rename</button>
             </div>
         </div>

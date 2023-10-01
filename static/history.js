@@ -57,7 +57,7 @@ async function populate_history_menu(history_json) {
             const timestamp = entry[0];
             const filename = entry[1];
             history_contents.insertAdjacentHTML('beforeend',
-                `<div class="bg-slate-950 rounded-xl px-5 py-3 text-white mb-3">
+                `<div class="bg-zinc-900 rounded-xl px-5 py-3 text-white mb-3">
                     <h1 class="text-lg font-semibold line-clamp-1">${filename}</h1>
                     <h1 class="text-md text-zinc-500">${new Date(timestamp.replace(/_/g, ' ')).toLocaleString()}</h1>
                     <div class="flex mt-2">
