@@ -4,7 +4,11 @@ import os
 import shutil
 import zipfile
 
+# Absolute path to repository root
 pwd = os.path.dirname(os.path.realpath(__file__))
+
+# Absolute path to venv site packages
+lib = os.path.join(pwd, '.venv', 'lib', 'python3.10', 'site-packages')
 
 exclude_from_zip = [
     'kodi_record_button.zip',
@@ -33,6 +37,10 @@ def zip_addon():
 
     # Add all repo files to zip without including repo dir
     for root, dirs, files in os.walk(pwd):
+        # Skip .git and .venv
+        if '.git' in root or '.venv' in root:
+            continue
+
         for file in files:
             # Skip development scripts, config files, .pyc files
             if file in exclude_from_zip or file.endswith('.pyc'):
@@ -40,6 +48,15 @@ def zip_addon():
 
             abs_path = os.path.join(root, file)
             rel_path = os.path.relpath(abs_path, os.path.join(pwd, '..'))
+            zip_handler.write(abs_path, rel_path)
+
+    # Add all pipenv dependencies
+    for root, dirs, files in os.walk(lib):
+        for file in files:
+            abs_path = os.path.join(root, file)
+            # Move dependencies to repository root where python can find them
+            # Example: kodi_record_button/.venv/lib/python3.10/site-packages/sqlalchemy > kodi_record_button/sqlalchemy
+            rel_path = os.path.join('kodi_record_button', os.path.relpath(abs_path, lib))
             zip_handler.write(abs_path, rel_path)
 
     zip_handler.close()
