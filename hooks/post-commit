@@ -25,6 +25,10 @@ if [ ! -z "$ADDON_FILES" ] && [ -z "$CHANGELOG" ]; then
     LAST_TAG=$(git tag | sort -V | tail -n 1)
     NEW_TAG=$(echo $LAST_TAG | awk -F. '{$NF = $NF + 1;} 1' OFS=.)
 
+    # Update the version number in addon.xml, add to commit
+    sed -i '/<addon id="script.record.button" /s/version="[^"]*"/version="'"$NEW_TAG"'"/' addon.xml
+    git add addon.xml
+
     # Add first line of commit message to changelog, add to commit
     COMMIT_MESSAGE=$(git log -1 --format=format:"%s")
     printf "$NEW_TAG - $COMMIT_MESSAGE\n" >> changelog.txt
