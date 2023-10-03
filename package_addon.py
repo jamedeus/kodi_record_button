@@ -26,6 +26,7 @@ exclude_from_zip = [
     'Pipfile.lock',
     'play_test_file.py',
     'refresh.py',
+    'requirements.txt',
     'reset_addon.py',
     'tailwind.config.js',
     'test_history.json',
@@ -43,8 +44,8 @@ def zip_addon():
 
     # Add all repo files to zip without including repo dir
     for root, dirs, files in os.walk(pwd):
-        # Skip .git and .venv
-        if '.git' in root or '.venv' in root:
+        # Skip .git and .zip_dependencies
+        if '.git' in root or '.zip_dependencies' in root:
             continue
 
         for file in files:
@@ -57,7 +58,8 @@ def zip_addon():
             zip_handler.write(abs_path, rel_path)
 
     # Install dependencies to local site packages folder
-    subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt', '--target', lib])
+    print("Installing python dependencies...\n")
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', '-r', 'requirements.txt', '--target', lib])
 
     # Add all dependencies to zip
     for root, dirs, files in os.walk(lib):
@@ -75,4 +77,7 @@ if __name__ == '__main__':
     # Create zip in current working directory
     zip_addon()
     # Move to home folder for easier installation
-    shutil.move('kodi_record_button.zip', os.path.join(os.path.expanduser('~/'), 'kodi_record_button.zip'))
+    destination = os.path.join(os.path.expanduser('~/'), 'kodi_record_button.zip')
+    shutil.move('kodi_record_button.zip', destination)
+    print("\nDone")
+    print(f"\nFinished addon: {destination}")
