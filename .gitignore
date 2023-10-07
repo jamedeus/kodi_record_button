@@ -1,0 +1,6 @@
+.env
+.coverage
+.zip_dependencies
+play_test_file.py
+node_modules
+__pycache__
