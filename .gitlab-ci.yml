@@ -7,16 +7,18 @@ stages:
 
 test:
   stage: test
+  image: python:3.10-bullseye
   tags:
-    - arm64
+    - nas
+    - docker
   rules:
     - if: $CI_COMMIT_TAG
       when: never
     - when: always
-  script:
+  before_script:
     - pip3 install pipenv
-    - export PATH=$PATH:/home/gitlab-runner/.local/bin
-    - pipenv install
-    - pipenv run python3.10 -m coverage run --source='flask_backend,database' -m unittest discover tests
-    - pipenv run python3.10 -m coverage report -m --precision=1
+    - pipenv install --dev
+  script:
+    - pipenv run coverage run --source='flask_backend,database' -m unittest discover tests
+    - pipenv run coverage report -m --precision=1
   coverage: '/TOTAL.*\s+(\d+\.\d+\%)$/'
