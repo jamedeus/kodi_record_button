@@ -1,5 +1,4 @@
 before_script:
-  - docker info
   - printenv
 
 stages:
@@ -7,16 +6,17 @@ stages:
 
 test:
   stage: test
-  image: python:3.10-bullseye
   tags:
     - nas
-    - docker
+    - shell
   rules:
     - if: $CI_COMMIT_TAG
       when: never
     - when: always
   before_script:
-    - pip3 install pipenv
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - python3 -m pip install pipenv
     - pipenv install --dev
   script:
     - pipenv run coverage run --source='flask_backend,database' -m unittest discover tests
