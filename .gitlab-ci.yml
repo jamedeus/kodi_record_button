@@ -17,6 +17,6 @@ test:
     - export PATH=$PATH:/home/gitlab-runner/.local/bin
     - pipenv install --dev
   script:
-    - pipenv run python3.10 -m coverage run --source='flask_backend,database' -m unittest discover tests
-    - pipenv run python3.10 -m coverage report -m --precision=1
+    - pipenv run coverage run --source='flask_backend,database' -m unittest discover tests
+    - pipenv run coverage report -m --precision=1
   coverage: '/TOTAL.*\s+(\d+\.\d+\%)$/'

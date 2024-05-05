@@ -9,6 +9,7 @@ flask = "==2.2.3"
 ffmpeg-python = "==0.2.0"
 pyqrcode = "==1.2.1"
 pypng = "==0.20220715.0"
+werkzeug = "~=2.3"
 
 [dev-packages]
 coverage = "==7.2.3"
