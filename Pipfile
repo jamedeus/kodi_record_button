@@ -8,10 +8,10 @@ sqlalchemy = "==2.0.20"
 flask = "==2.2.3"
 ffmpeg-python = "==0.2.0"
 pyqrcode = "==1.2.1"
-coverage = "==7.2.3"
 pypng = "==0.20220715.0"
 
 [dev-packages]
+coverage = "==7.2.3"
 
 [requires]
 python_version = "3.10"
