@@ -10,6 +10,8 @@ A notification is shown at startup with a QR code link to the webapp. Simply poi
 
 Previously-generated clips can be downloaded from the history menu at the bottom of the page.
 
+![Demo](demo.mp4){height=400}
+
 ## Installation
 
 Download the latest [release](https://gitlab.com/jamedeus/kodi_record_button/-/releases) zip, then launch Kodi and go to `Settings -> Add-ons -> Install from zip file`. See [Kodi Wiki](https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file) for more details.
