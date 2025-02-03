@@ -1,0 +1,7 @@
+[run]
+source = flask_backend,database
+
+[report]
+precision = 1
+show_missing = True
+skip_empty = True
