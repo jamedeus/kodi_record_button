@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.record.button" name="Record Button" version="1.0.0" provider-name="Josh Medeiros">
+<addon id="script.record.button" name="Record Button" version="0.5" provider-name="Josh Medeiros">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>
 	</requires>

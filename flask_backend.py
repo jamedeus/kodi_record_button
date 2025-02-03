@@ -6,7 +6,7 @@ import ffmpeg
 import random
 import socket
 import xbmcgui
-import pyqrcode
+import segno
 import xbmcaddon
 import threading
 from socketserver import ThreadingMixIn
@@ -106,8 +106,8 @@ def run_server(timeout=120):
 
 # Takes IP and port, creates QR code link, writes PNG to userdata dir
 def generate_qr_code_link(ip, port):
-    qr = pyqrcode.create(f"http://{ip}:{port}")
-    qr.png(qr_path, scale=8, quiet_zone=1)
+    qr = segno.make(f"http://{ip}:{port}")
+    qr.save(qr_path, scale=8, border=1)
 
 
 # Serve non-node_modules static files
