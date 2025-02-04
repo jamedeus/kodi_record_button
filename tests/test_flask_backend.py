@@ -1,5 +1,6 @@
 import os
 import json
+import socket
 import ffmpeg
 import threading
 from unittest import TestCase
@@ -20,20 +21,46 @@ from flask_backend import (
 
 
 class TestAddressChecks(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Open a socket on a random port, save port to use in tests
+        cls.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.s.bind(('127.0.0.1', 0))
+        cls.used_port = cls.s.getsockname()[1]
+        cls.s.listen(1)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Release port
+        cls.s.close()
+
     def test_address_available(self):
         # Should return True for unused port
         self.assertTrue(address_available('0.0.0.0', 8888))
-        # Should return False for reserved port
-        self.assertFalse(address_available('0.0.0.0', 443))
+        # Should return False for used port
+        self.assertFalse(address_available('0.0.0.0', self.used_port))
 
     def test_wait_for_address_release(self):
         # Should return True immediately for available port
         self.assertTrue(wait_for_address_release('0.0.0.0', 8888, 5))
-        # Should return False after timeout seconds (5) for reserved port
-        self.assertFalse(wait_for_address_release('0.0.0.0', 443, 5))
+        # Should return False after timeout seconds (5) for used port
+        self.assertFalse(wait_for_address_release('0.0.0.0', self.used_port, 5))
 
 
 class TestRunServer(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Open a socket on a random port, save port to use in tests
+        cls.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.s.bind(('127.0.0.1', 0))
+        cls.used_port = cls.s.getsockname()[1]
+        cls.s.listen(1)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Release port
+        cls.s.close()
+
     def test_run_server(self):
         # Get number of running threads before starting server
         threads_before = len(threading.enumerate())
@@ -125,7 +152,7 @@ class TestRunServer(TestCase):
             if setting == 'flask_host':
                 return '0.0.0.0'
             elif setting == 'flask_port':
-                return '443'
+                return self.used_port
 
         # Mock methods called by run_server to confirm they were NOT called
         with patch('flask_backend.autodelete', MagicMock()) as mock_autodelete, \

@@ -3,20 +3,49 @@ before_script:
 
 stages:
   - test
+  - release
 
 test:
   stage: test
+  image: python:3.10-slim-bookworm
   tags:
     - nas
-    - shell
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: never
-    - when: always
+    - docker
   before_script:
-    - export PATH=$PATH:/home/gitlab-runner/.local/bin
+    - pip3 install pipenv
     - pipenv install --dev
   script:
     - pipenv run coverage run -m unittest discover tests
     - pipenv run coverage report
   coverage: '/TOTAL.*\s+(\d+\.\d+\%)$/'
+
+release:
+  stage: release
+  image: python:3.10-slim-bookworm
+  tags:
+    - nas
+    - docker
+  needs:
+    - job: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "master"'
+      when: never
+    - if: '$CI_COMMIT_TAG'
+      when: always
+  script:
+    - npm install
+    - python3 -c "from package_addon import zip_addon; zip_addon()"
+    - mv kodi_record_button.zip kodi_record_button-v$CI_COMMIT_TAG.zip
+  artifacts:
+    paths:
+      - kodi_record_button-v$CI_COMMIT_TAG.zip
+    expire_in: never
+  release:
+    tag_name: $CI_COMMIT_TAG
+    ref: $CI_COMMIT_SHA
+    name: 'Release $CI_COMMIT_TAG'
+    description: '# $CI_COMMIT_TAG - $CI_COMMIT_TITLE<br/><br/>[Download addon zip]($CI_JOB_URL/artifacts/raw/kodi_record_button-v$CI_COMMIT_TAG.zip)'
+    assets:
+      links:
+        - name: 'kodi_record_button-v$CI_COMMIT_TAG.zip'
+          url: '$CI_JOB_URL/artifacts/raw/kodi_record_button-v$CI_COMMIT_TAG.zip'

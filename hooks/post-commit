@@ -1,13 +1,17 @@
 #!/bin/sh
 
-# This script packages the addon and pushes a release to gitlab when
-# relevant files are part of the commit. The commit is also tagged, the
-# tag + commit message are added to changelog.txt, and changelog.txt is
+# This script tags commits containing files that are part of the packaged
+# addon, triggering a CI/CD job to package the addon and push a new release.
+# The tag and commit message are also added to changelog.txt, which is then
 # added to the commit.
 #
 # Installation: Add the following line to .git/hooks/post-commit:
 # nohup hooks/post-commit >/dev/null 2>&1 &
 
+# Skip if not on master branch
+if [ "$(git branch --show-current)" != "master" ]; then
+    exit
+fi
 
 # Check if addon files were included in commit
 # Matches all jpg and png, all files in resources, static, and templates, files
@@ -38,49 +42,4 @@ if [ ! -z "$ADDON_FILES" ] && [ -z "$CHANGELOG" ]; then
     # Tag new commit
     git tag $NEW_TAG
     printf "$(date -Iseconds): Tagged new commit $NEW_TAG\n" >> .git/release.log
-
-    # Get hash of last commit
-    export HASH=$(git log -1 --format=format:"%H")
-
-    # Get gitlab access token
-    export $(envsubst < .env)
-
-    # Package addon zip
-    npm install
-    python3 -c "from package_addon import zip_addon; zip_addon()"
-    mv kodi_record_button.zip kodi_record_button-v$NEW_TAG.zip
-    filename="kodi_record_button-v$NEW_TAG.zip"
-    printf "$(date -Iseconds): Packaged new version: $filename\n" >> .git/release.log
-
-    # Upload zip to gitlab, parse URL from response
-    output=$(curl --request POST --header "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" \
-                  --form "file=@$HOME/git/kodi_record_button/$filename" \
-                  "https://gitlab.com/api/v4/projects/50239619/uploads")
-    url=$(echo "$output" | jq -r '.full_path')
-    printf "$(date -Iseconds): Uploaded zip to gitlab, response:\n" >> .git/release.log
-    printf "$output\n" >> .git/release.log
-
-    # Build payload for new release
-    json_payload=$(jq -n \
-        --arg name "Release $NEW_TAG" \
-        --arg tag "$NEW_TAG" \
-        --arg description "# $NEW_TAG - $COMMIT_MESSAGE<br/><br/>[Download addon zip](https://gitlab.com$url)" \
-        --arg ref "$HASH" \
-        --arg url "https://gitlab.com$url" \
-        --arg filename "$filename" \
-        '{ "name": $name, "tag_name": $tag, "ref": $ref, "description": $description, "assets": { "links": [{ "name": $filename, "url": $url }] } }'
-    )
-    printf "$(date -Iseconds): Built release payload: $json_payload\n" >> .git/release.log
-
-    # Push new release
-    output=$(curl --header 'Content-Type: application/json' \
-                  --header "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" \
-                  --data "$json_payload" \
-                  --request POST "https://gitlab.com/api/v4/projects/50239619/releases")
-    printf "$(date -Iseconds): Pushed new release to gitlab, response:\n" >> .git/release.log
-    printf "$output\n\n\n" >> .git/release.log
-
-    # Delete packaged addon
-    rm $filename
-
 fi
