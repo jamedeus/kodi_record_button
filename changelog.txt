@@ -3,4 +3,4 @@
 0.2 - Add MySQL support in addition to SQLite
 0.3 - Record button bug fixes
 0.4 - UI improvements
-0.5 - Switch to maintained QR code library
+0.5 - Improve code quality
