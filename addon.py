@@ -1,3 +1,5 @@
+'''Kodi Record Button addon entrypoint.'''
+
 import xbmc
 from paths import qr_path
 from database import replace_engine
@@ -5,18 +7,24 @@ from flask_backend import run_server
 from kodi_gui import show_notification
 
 
-# Detect when user changes settings in GUI
-class SettingsMonitor(xbmc.Monitor):
+class SettingsMonitor(xbmc.Monitor):  # pylint: disable=too-few-public-methods
+    '''Detects when user changes settings in Kodi GUI. Sets changed attribute
+    used by main to detect changes.
+    '''
+
     def __init__(self):
         self.changed = False
         xbmc.Monitor.__init__(self)
 
-    def onSettingsChanged(self):
+    def onSettingsChanged(self):  # pylint: disable=invalid-name
+        '''Writes to Kodi log and sets changed bool to True.'''
         xbmc.log("Settings were changed, restarting flask", xbmc.LOGINFO)
         self.changed = True
 
 
 def main():
+    '''Addon entrypoint, starts flask backend and monitors settings changes.'''
+
     # Get object used to detect settings changes.
     # Must instantiate before showing error - monitor detects when settings are opened and
     # closed, if settings are already open when instantiated no changes will be detected.
@@ -39,7 +47,7 @@ def main():
             break
 
         # Restart flask if user made changes
-        elif monitor.changed:
+        if monitor.changed:
             xbmc.log("Restarting flask...", xbmc.LOGINFO)
             show_notification("Record Button", "Restarting web server")
 

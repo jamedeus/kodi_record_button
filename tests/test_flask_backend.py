@@ -1,10 +1,12 @@
+# pylint: disable=line-too-long, missing-module-docstring, missing-function-docstring
+
 import os
 import json
 import socket
-import ffmpeg
 import threading
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
+import ffmpeg
 from sqlalchemy.exc import OperationalError
 import mock_kodi_modules
 from paths import output_path, qr_path
@@ -69,10 +71,11 @@ class TestRunServer(TestCase):
         def mock_get_settings(setting):
             if setting == 'flask_host':
                 return '0.0.0.0'
-            elif setting == 'flask_port':
+            if setting == 'flask_port':
                 return '8888'
-            elif setting == 'autodelete':
+            if setting == 'autodelete':
                 return 'true'
+            return None
 
         # Mock methods called by run_server to confirm they were called
         with patch('flask_backend.autodelete', MagicMock()) as mock_autodelete, \
@@ -110,10 +113,11 @@ class TestRunServer(TestCase):
         def mock_get_settings(setting):
             if setting == 'flask_host':
                 return '0.0.0.0'
-            elif setting == 'flask_port':
+            if setting == 'flask_port':
                 return '8888'
-            elif setting == 'autodelete':
+            if setting == 'autodelete':
                 return 'false'
+            return None
 
         # Mock methods called by run_server to confirm they were called
         with patch('flask_backend.autodelete', MagicMock()) as mock_autodelete, \
@@ -151,8 +155,9 @@ class TestRunServer(TestCase):
         def mock_get_settings(setting):
             if setting == 'flask_host':
                 return '0.0.0.0'
-            elif setting == 'flask_port':
+            if setting == 'flask_port':
                 return self.used_port
+            return None
 
         # Mock methods called by run_server to confirm they were NOT called
         with patch('flask_backend.autodelete', MagicMock()) as mock_autodelete, \
@@ -201,7 +206,7 @@ class TestEndpoints(TestCase):
         with patch.object(player, 'getTime', return_value=123):
             response = self.app.get('/get_playtime')
             # Confirm contents and status code
-            self.assertEqual(response.get_json(), 123)
+            self.assertEqual(response.get_json(), {'playtime': 123})
             self.assertEqual(response.status_code, 200)
 
     def test_get_playtime_nothing_playing(self):
@@ -209,7 +214,7 @@ class TestEndpoints(TestCase):
         with patch.object(player, 'getTime', side_effect=RuntimeError):
             response = self.app.get('/get_playtime')
             # Confirm contents and status code
-            self.assertEqual(response.get_json(), 'Nothing playing')
+            self.assertEqual(response.get_json(), {'error': 'Nothing playing'})
             self.assertEqual(response.status_code, 500)
 
     def test_get_playing_now_tv(self):
@@ -279,10 +284,16 @@ class TestEndpoints(TestCase):
              patch('flask_backend.gen_mp4', return_value=True), \
              patch('flask_backend.log_generated_file', MagicMock()) as mock_log_generated_file:
 
-            response = self.app.post('/submit', data=payload, content_type='application/json')
+            response = self.app.post(
+                '/submit',
+                data=payload,
+                content_type='application/json'
+            )
             # Confirm status code, confirm response contains 20 character random filename
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(len(response.get_json()), 20)
+            data = response.get_json()
+            self.assertEqual(type(data), dict)
+            self.assertEqual(len(data['filename']), 20)
 
             # Confirm log_generated_file was called with correct arguments
             self.assertTrue(mock_log_generated_file.called_once)
@@ -290,7 +301,7 @@ class TestEndpoints(TestCase):
                 '/path/to/source.mp4',
                 '23.4567',
                 '100.0',
-                response.get_json().replace('.mp4', ''),
+                data['filename'].replace('.mp4', ''),
                 'Show Name',
                 'Episode Name'
             )
@@ -312,7 +323,11 @@ class TestEndpoints(TestCase):
              patch('flask_backend.gen_mp4', return_value=True), \
              patch('flask_backend.log_generated_file', side_effect=OperationalError("", "", "Database locked")):
 
-            response = self.app.post('/submit', data=payload, content_type='application/json')
+            response = self.app.post(
+                '/submit',
+                data=payload,
+                content_type='application/json'
+            )
             # Confirm status code and error response
             self.assertEqual(response.status_code, 500)
             self.assertEqual(
@@ -336,7 +351,7 @@ class TestEndpoints(TestCase):
 
     def test_regenerate(self):
         # Create mock request payload
-        payload = json.dumps('target_file')
+        payload = json.dumps({'filename': 'target_file'})
 
         # Create mock ORM entry
         mock_entry = MagicMock()
@@ -354,18 +369,29 @@ class TestEndpoints(TestCase):
             # Mock quality setting to 20 MB/min
             mock_addon.return_value.getSetting.return_value = '20'
 
-            response = self.app.post('/regenerate', data=payload, content_type='application/json')
+            response = self.app.post(
+                '/regenerate',
+                data=payload,
+                content_type='application/json'
+            )
             # Confirm status code and response
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.get_json(), 'target_file.mp4')
+            self.assertEqual(
+                response.get_json()['filename'],
+                'target_file.mp4'
+            )
 
     def test_regenerate_sql_error(self):
         # Create mock request payload
-        payload = json.dumps('target_file')
+        payload = json.dumps({'filename': 'target_file'})
 
         # Mock player object to raise error (simulate database issue)
         with patch('flask_backend.get_orm_entry', side_effect=OperationalError("", "", "Database locked")):
-            response = self.app.post('/regenerate', data=payload, content_type='application/json')
+            response = self.app.post(
+                '/regenerate',
+                data=payload,
+                content_type='application/json'
+            )
             # Confirm status code and error response
             self.assertEqual(response.status_code, 500)
             self.assertEqual(
@@ -411,7 +437,11 @@ class TestEndpoints(TestCase):
         # Mock database function to return mocked history
         with patch('flask_backend.load_history_search_results', return_value=mock_history):
             # Send request, confirm status code and JSON
-            response = self.app.post('/search_history', data=json.dumps('search'), content_type='application/json')
+            response = self.app.post(
+                '/search_history',
+                data=json.dumps({'query': 'search'}),
+                content_type='application/json'
+            )
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.get_json(), mock_history)
 
@@ -419,9 +449,13 @@ class TestEndpoints(TestCase):
         # Mock database function to do nothing
         with patch('flask_backend.delete_entry'):
             # Send request, confirm status code and JSON
-            response = self.app.post('/delete', data=json.dumps('file.mp4'), content_type='application/json')
+            response = self.app.post(
+                '/delete',
+                data=json.dumps({'filename': 'file.mp4'}),
+                content_type='application/json'
+            )
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.get_data(as_text=True), 'file.mp4 deleted')
+            self.assertEqual(response.get_json(), {'deleted': 'file.mp4'})
 
     def test_rename(self):
         # Create mock request payload with trailing whitespace
@@ -432,9 +466,16 @@ class TestEndpoints(TestCase):
              patch('flask_backend.is_duplicate', return_value=False):
 
             # Send request, confirm status code and JSON, confirm trailing whitespace removed
-            response = self.app.post('/rename', data=payload, content_type='application/json')
+            response = self.app.post(
+                '/rename',
+                data=payload,
+                content_type='application/json'
+            )
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.get_json(), {'filename': 'new_name.mp4'})
+            self.assertEqual(
+                response.get_json(),
+                {'filename': 'new_name.mp4'}
+            )
 
     def test_rename_duplicate(self):
         # Create mock request payload
@@ -445,9 +486,16 @@ class TestEndpoints(TestCase):
              patch('flask_backend.is_duplicate', return_value=True):
 
             # Send request, confirm status code and JSON
-            response = self.app.post('/rename', data=payload, content_type='application/json')
+            response = self.app.post(
+                '/rename',
+                data=payload,
+                content_type='application/json'
+            )
             self.assertEqual(response.status_code, 409)
-            self.assertEqual(response.get_json(), {'error': 'File named new_name.mp4 already exists'})
+            self.assertEqual(
+                response.get_json(),
+                {'error': 'File named new_name.mp4 already exists'}
+            )
 
 
 class TestGetBitrate(TestCase):
@@ -477,9 +525,7 @@ class TestGenMp4(TestCase):
                 '/path/to/source.mp4',
                 '23.4567',
                 '100.0',
-                'output',
-                'Show Name',
-                'Episode Name'
+                'output'
             ))
 
             # Confirm correct args passed to ffmpeg methods
@@ -505,7 +551,5 @@ class TestGenMp4(TestCase):
                 '/path/to/source.mp4',
                 '23.4567',
                 '100.0',
-                'output',
-                'Show Name',
-                'Episode Name'
+                'output'
             ))

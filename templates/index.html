@@ -10,52 +10,92 @@
 </head>
 <body class="flex justify-center min-h-screen bg-slate-950 py-3 px-5 lg:py-5">
     <div class="flex flex-col text-white text-center">
-        <h1 class="text-4xl mb-2 lg:mb-5">Kodi Recorder</h1>
+        <h1 class="text-4xl mb-2 lg:mb-5">
+            Kodi Recorder
+        </h1>
 
         <!-- Now playing info -->
-        <div id="stream-info" class="bg-zinc-800 text-zinc-200 rounded-xl mx-auto py-2 px-6 lg:py-4 lg:px-8 shadow-md">
-            <h1 id="playing-now" class="text-md lg:text-lg">Playing Now:</h1>
-            <h1 id="episode-playing" class="text-2xl lg:text-3xl font-bold mt-1 lg:my-2">Nothing</h1>
+        <div id="stream-info" class="section py-2 px-6 lg:py-4 lg:px-8">
+            <h1 id="playing-now" class="lg:text-lg">
+                Playing Now:
+            </h1>
+            <h1 id="episode-playing" class="text-2xl lg:text-3xl font-bold mt-1 lg:my-2">
+                Nothing
+            </h1>
             <h3 id="episode-details" class="hidden lg:block text-md"></h3>
         </div>
 
         <!-- Record button -->
-        <div id="record-button" class="bg-slate-950 text-zinc-200 select-none rounded-full relative mx-auto mt-8 lg:mt-10 w-44 h-44 lg:w-52 lg:h-52 border-2 border-white transition-all duration-500">
-            <h1 id="record-button-text" class="absolute inset-0 flex items-center justify-center text-3xl font-medium opacity-100 transition-opacity">Record</h1>
-            <div id="spinner" class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity loading-animation"><div></div><div></div><div></div><div></div></div>
+        <div
+            id="record-button"
+            class="relative bg-slate-950 text-zinc-200 mx-auto mt-8 lg:mt-10 w-44 h-44 lg:w-52 lg:h-52 select-none rounded-full border-2 border-white transition-all duration-500"
+        >
+            <h1 id="record-button-text" class="absolute inset-0 flex items-center justify-center text-3xl font-medium opacity-100 transition-opacity">
+                Record
+            </h1>
+            <div id="spinner" class="loading-animation absolute inset-0 opacity-0 transition-opacity"><div></div><div></div><div></div><div></div></div>
         </div>
 
         <!-- Download button -->
         <!-- Hidden on load with pointer-events-none opacity-0 -->
-        <div id="result" class="flex flex-col bg-zinc-800 text-zinc-200 rounded-lg mt-8 lg:mt-10 mb-5 mx-auto p-4 lg:p-6 shadow-md pointer-events-none opacity-0 transition-opacity duration-500">
-            <a id="download-button" class="bg-green-600 px-3 py-2 mx-auto mb-3 text-lg font-bold rounded-lg">Download</a>
-            <label for="filename-input" class="text-md font-light mb-1"><b>Rename (optional):</b></label>
+        <div
+            id="result"
+            class="section mt-8 lg:mt-10 mb-5 p-4 lg:p-6 pointer-events-none opacity-0 transition-opacity duration-500"
+        >
+            <a id="download-button" class="button bg-green-600 mb-3 text-lg">
+                Download
+            </a>
+            <label for="filename-input" class="mb-1">
+                Rename (optional):
+            </label>
             <div class="flex">
-                <input id="rename-input" type="text" class="pl-10 py-2 bg-zinc-700 placeholder-zinc-500 rounded-l-md rounded-r-none text-md text-center appearance-none focus:placeholder-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="" name="filename-input" autocomplete="off">
-                <button id="rename-button" class="bg-green-600 p-2 rounded-r-lg w-10 h-10 flex items-center justify-center" onclick="rename_file(this);"><i class="fas fa-pencil-alt m-auto"></i></button>
+                <input
+                    id="rename-input"
+                    type="text"
+                    class="bg-zinc-700 placeholder-zinc-500 pl-10 py-2 rounded-l-md rounded-r-none text-center appearance-none focus:placeholder-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    placeholder=""
+                    name="filename-input"
+                    autocomplete="off"
+                >
+                <button id="rename-button" class="flex bg-green-600 p-2 w-10 h-10 rounded-r-lg">
+                    <i class="fas fa-pencil-alt m-auto"></i>
+                </button>
             </div>
         </div>
 
         <!-- History button -->
         <div class="mt-auto flex">
-            <button id="history-button" class="bg-zinc-500 rounded-lg py-2 px-3 mx-auto font-bold" onclick="open_history_menu(true);">History</button>
+            <button id="history-button" class="button bg-zinc-500">
+                History
+            </button>
         </div>
 
         <!-- History menu (hidden) -->
-        <div id="history-menu" class="fixed flex flex-col bottom-0 left-0 right-0 h-[95%] lg:h-[80%] lg:max-w-[50%] mx-5 lg:mx-auto bg-zinc-700 rounded-t-2xl transform translate-y-full transition-transform duration-500 ease-in-out overscroll-contain overflow-y-auto">
+        <div
+            id="history-menu"
+            class="fixed flex flex-col bottom-0 left-0 right-0 h-[95%] lg:h-[80%] lg:max-w-[50%] mx-5 lg:mx-auto bg-zinc-700 rounded-t-2xl transform translate-y-full transition-transform duration-500 ease-in-out overscroll-contain overflow-y-auto"
+        >
             <!-- Header -->
             <div id="history-header" class="sticky top-0 z-10 bg-zinc-700">
                 <div class="flex py-3">
                     <div class="ms-3 me-auto w-8 h-8"></div>
-                    <h1 class="text-2xl font-bold m-auto">History</h1>
+                    <h1 class="text-2xl font-bold m-auto">
+                        History
+                    </h1>
                     <!-- Close button -->
-                    <button id="history-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-xl flex" onclick="open_history_menu(false);">
+                    <button id="history-close" class="close-button" style="font-size: 1.25rem !important">
                         <i class="fas fa-times m-auto"></i>
                     </button>
                 </div>
                 <!-- Search -->
                 <div class="flex pb-3">
-                    <input id="search-input" type="text" class="mx-auto p-2 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center appearance-none focus:bg-zinc-950 focus:placeholder-zinc-950 focus:outline-none focus:ring focus:ring-blue-600" placeholder="Search..." autocomplete="off">
+                    <input
+                    id="search-input"
+                    type="text"
+                    class="input mx-auto focus:bg-zinc-950 focus:placeholder-zinc-950 focus:outline-none focus:ring focus:ring-blue-600"
+                    placeholder="Search..."
+                    autocomplete="off"
+                >
                 </div>
             </div>
 
@@ -65,34 +105,49 @@
         </div>
 
         <!-- Rename modal (hidden) -->
-        <div id="edit-modal" class="fixed flex flex-col top-0 left-0 right-0 pb-3 bg-zinc-700 rounded-2xl w-min mx-auto transform -translate-y-full duration-500 ease-in-out overflow-y-auto">
+        <div id="edit-modal" class="modal modal-hide w-min">
             <!-- Header -->
             <div class="flex py-3">
                 <div class="ms-3 me-auto w-8 h-8"></div>
-                <h1 class="text-2xl font-bold m-auto">Rename</h1>
+                <h1 class="text-2xl font-bold m-auto">
+                    Rename
+                </h1>
                 <!-- Close button -->
-                <button id="edit-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-lg flex" onclick="show_edit_modal(false);">
+                <button id="edit-close" class="close-button">
                     <i class="fas fa-times m-auto"></i>
                 </button>
             </div>
 
             <!-- Contents -->
             <div class="flex flex-col mx-auto py-3 px-10">
-                <h2 class="text-sm">Original name:</h2>
+                <h2 class="text-sm">
+                    Original name:
+                </h2>
                 <h1 id="original-filename" class="text-xl font-bold"></h1>
-                <input id="edit-input" type="text" class="p-2 my-3 bg-zinc-900 placeholder-zinc-500 rounded-md text-md text-center appearance-none focus:outline-none focus:ring focus:ring-blue-600" placeholder="enter new name" name="filename-input" autocomplete="off">
-                <button id="edit-button" class="bg-green-600 rounded-lg py-2 px-3 mx-auto font-bold" onclick="rename_file(this);">Rename</button>
+                <input
+                    id="edit-input"
+                    type="text"
+                    class="input my-3 focus:outline-none focus:ring focus:ring-blue-600"
+                    placeholder="enter new name"
+                    name="filename-input"
+                    autocomplete="off"
+                >
+                <button id="edit-button" class="button bg-green-600">
+                    Rename
+                </button>
             </div>
         </div>
 
         <!-- Error modal (hidden) -->
-        <div id="error-modal" class="fixed flex flex-col top-0 left-0 right-0 pb-3 bg-zinc-700 rounded-2xl w-80 mx-auto transform -translate-y-full duration-500 ease-in-out overflow-y-auto">
+        <div id="error-modal" class="modal modal-hide w-80">
             <!-- Header -->
             <div class="flex py-3">
                 <div class="ms-3 me-auto w-8 h-8"></div>
-                <h1 class="text-2xl font-bold m-auto">Error</h1>
+                <h1 class="text-2xl font-bold m-auto">
+                    Error
+                </h1>
                 <!-- Close button -->
-                <button id="error-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-lg flex" onclick="show_error_modal(false);">
+                <button id="error-close" class="close-button">
                     <i class="fas fa-times m-auto"></i>
                 </button>
             </div>
@@ -104,13 +159,15 @@
         </div>
 
         <!-- Regenerate modal (hidden) -->
-        <div id="regen-modal" class="fixed flex flex-col top-0 left-0 right-0 pb-3 bg-zinc-700 rounded-2xl w-80 mx-auto transform -translate-y-full duration-500 ease-in-out overflow-y-auto">
+        <div id="regen-modal" class="modal modal-hide w-80">
             <!-- Header -->
             <div class="flex py-3">
                 <div class="ms-3 me-auto w-8 h-8"></div>
-                <h1 class="text-2xl font-bold m-auto">Missing</h1>
+                <h1 class="text-2xl font-bold m-auto">
+                    Missing
+                </h1>
                 <!-- Close button -->
-                <button id="regen-close" class="ms-auto me-3 rounded-full w-8 h-8 bg-red-500 text-lg flex" onclick="show_regen_modal(false);">
+                <button id="regen-close" class="close-button">
                     <i class="fas fa-times m-auto"></i>
                 </button>
             </div>
@@ -118,85 +175,50 @@
             <!-- Contents -->
             <div class="flex flex-col mx-auto pb-3 px-10">
                 <h1 id="regen-modal-contents" class="text-lg h-28"></h1>
-                <button id="regen-button" class="bg-green-600 rounded-lg py-2 px-3 mx-auto font-bold" onclick="regenerate_file(this);">Regenerate</button>
+                <button id="regen-button" class="button bg-green-600">
+                    Regenerate
+                </button>
             </div>
         </div>
     </div>
     <script>
-        // Now playing elements
-        const stream_info = document.getElementById("stream-info");
-        const playing_now_label = document.getElementById("playing-now");
-        const episode_playing = document.getElementById("episode-playing");
-        const episode_details = document.getElementById("episode-details");
+        // Create global context object used by JS static files to get elements
+        window.AppContext = {
+            // Result div elements
+            download_div: document.getElementById('result'),
+            download_button: document.getElementById('download-button'),
+            rename_input: document.getElementById('rename-input'),
+            rename_button: document.getElementById('rename-button'),
 
-        // Record button elements
-        const record_button = document.getElementById("record-button");
-        const record_text = document.getElementById("record-button-text");
-        const record_spinner = document.getElementById("spinner");
+            // Edit modal elements
+            edit_modal: document.getElementById('edit-modal'),
+            edit_input: document.getElementById('edit-input'),
+            edit_button: document.getElementById('edit-button'),
 
-        // Download button elements
-        const download_div = document.getElementById("result");
-        const download_button = document.getElementById("download-button");
-        const rename_input = document.getElementById("rename-input");
-        const rename_button = document.getElementById("rename-button");
+            // Error modal elements
+            error_modal: document.getElementById('error-modal'),
+            error_body: document.getElementById('error-modal-contents'),
 
-        // History menu elements
-        const history_button = document.getElementById('history-button');
-        const history_menu = document.getElementById('history-menu');
-        const history_header = document.getElementById('history-header');
-        const history_contents = document.getElementById('history-contents');
-        const history_close = document.getElementById('history-close');
-        const history_search = document.getElementById('search-input');
-
-        // Edit modal elements
-        const edit_modal = document.getElementById('edit-modal');
-        const original_name = document.getElementById('original-filename');
-        const edit_input = document.getElementById('edit-input');
-        const edit_button = document.getElementById('edit-button');
-
-        // Error modal elements
-        const error_modal = document.getElementById('error-modal');
-        const error_body = document.getElementById('error-modal-contents');
-
-        // Regen modal elements
-        const regen_modal = document.getElementById('regen-modal');
-        const regen_body = document.getElementById('regen-modal-contents');
-        const regen_button = document.getElementById('regen-button');
-
-        // Recording vars
-        var recording = false;
-        var start_time = "";
-
-        // Update playing now info every 5 seconds
-        async function update_playing_now() {
-            if (! recording) {
-                var result = await fetch('/get_playing_now');
-                result = await result.json();
-                episode_playing.innerHTML = result["title"];
-                episode_details.innerHTML = result["subtext"];
-            };
+            // Regen modal elements
+            regen_modal: document.getElementById('regen-modal'),
+            regen_body: document.getElementById('regen-modal-contents'),
+            regen_button: document.getElementById('regen-button'),
         };
-        update_playing_now();
-        setInterval(update_playing_now, 5000);
 
         // Rename by pressing enter key inside inputs
-        rename_input.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' || event.keyCode === 13) {
-                rename_button.click();
-            };
+        window.AppContext.rename_input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                window.AppContext.rename_button.click();
+            }
         });
-        edit_input.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' || event.keyCode === 13) {
-                edit_button.click();
-            };
+        window.AppContext.edit_input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                window.AppContext.edit_button.click();
+            }
         });
-
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        };
     </script>
-    <script src="/static/history.js"></script>
-    <script src="/static/record.js"></script>
-    <script src="/static/modals.js"></script>
+    <script type="module" src="/static/modals.js"></script>
+    <script type="module" src="/static/history.js"></script>
+    <script type="module" src="/static/record.js"></script>
 </body>
 </html>

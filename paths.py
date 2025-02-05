@@ -1,3 +1,5 @@
+'''Contains paths to sqlite database and QR code shown in startup notification.'''
+
 import os
 import xbmcvfs
 import xbmcaddon

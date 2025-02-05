@@ -2,3 +2,4 @@ sqlalchemy>=2.0.20
 flask>=2.3.3
 ffmpeg-python>=0.2.0
 segno>=1.6.1
+pymysql>=1.1.1

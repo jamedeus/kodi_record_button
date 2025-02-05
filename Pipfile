@@ -9,9 +9,12 @@ flask = "~=2.3"
 ffmpeg-python = "==0.2.0"
 segno = "~=1.6"
 werkzeug = "~=2.3"
+pymysql = "*"
 
 [dev-packages]
 coverage = "~=7.2"
+pylint = "*"
+requests = "*"
 
 [requires]
 python_version = "3.10"

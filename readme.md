@@ -33,9 +33,10 @@ All settings changes are applied automatically, restarting Kodi is not necessary
 
 Building the addon requires a unix-like system with python3.10, pip, and npm.
 
-First install dependencies for the frontend by running:
+First install dependencies for the frontend and compile the stylesheet by running:
 ```
 npm install
+npm run build:css
 ```
 
 Then run the included packaging script:
