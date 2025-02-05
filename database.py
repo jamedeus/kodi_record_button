@@ -1,8 +1,14 @@
+'''SqlAlchemy ORM model used to track generated clips, utility functions used
+to find, modify, and delete existing entries.
+'''
+
+# pylint: disable=too-few-public-methods
+
 import os
-import xbmc
-import xbmcvfs
 import logging
 import datetime
+import xbmc
+import xbmcvfs
 import xbmcaddon
 from sqlalchemy import URL
 from sqlalchemy.pool import NullPool
@@ -12,8 +18,8 @@ from kodi_gui import autodelete_notification
 from paths import output_path, database_path
 
 
-# Reads MySQL address and credentials from Kodi settings, returns URL object
 def get_mysql_url():
+    '''Reads MySQL address and credentials from Kodi settings, returns URL object.'''
     addon = xbmcaddon.Addon()
     return URL.create(
         'mysql+pymysql',
@@ -25,33 +31,35 @@ def get_mysql_url():
     )
 
 
-# Returns SQLAlchemy Engine for currently-configured database (Kodi settings)
-# All databases echo to Kodi logs, see SQLAlchemyLogHandler
 def get_configured_engine():
+    '''Returns SQLAlchemy Engine for currently-configured database (Kodi
+    settings). All databases echo to Kodi logs, see SQLAlchemyLogHandler.
+    '''
     db_type = xbmcaddon.Addon().getSetting('db_type')
     if db_type == "SQLite":
         # Workaround: return existing sqlite engine (creating new enginge makes
         # Kodi hang on exit, leaving open doesn't seem to have downsides)
-        global local_engine
         return local_engine
-    elif db_type == "MySQL":
+    if db_type == "MySQL":
         # Create new engine for remote MySQL server
         xbmc.log("Database: Creating MySQL engine", xbmc.LOGINFO)
         return create_engine(get_mysql_url(), poolclass=NullPool, echo=True)
+    raise ValueError("Unsupported value for 'db_type' setting")
 
 
-# Called when user changes settings, replaces the global engine object used by
-# all functions with appropriate engine for current settings
 def replace_engine():
-    global engine
+    '''Called when user changes settings, replaces the global engine object
+    used by all functions with appropriate engine for current settings.
+    '''
+    global engine  # pylint: disable=global-statement
     # Get new engine based on current settings
     engine = get_configured_engine()
     # Create database tables if they don't exist
     Base.metadata.create_all(engine)
 
 
-# Redirect SQLAlchemy echo to Kodi log
 class SQLAlchemyLogHandler(logging.Handler):
+    '''Redirects SQLAlchemy echo to Kodi log.'''
     def emit(self, record):
         xbmc.log(self.format(record), level=xbmc.LOGDEBUG)
 
@@ -60,12 +68,12 @@ class SQLAlchemyLogHandler(logging.Handler):
 logging.basicConfig(handlers=[SQLAlchemyLogHandler()])
 
 
-class Base(DeclarativeBase):
+class Base(DeclarativeBase):  # pylint: disable=missing-class-docstring
     pass
 
 
-# Store all parameters used to generate a single file
 class GeneratedFile(Base):
+    '''Stores all parameters used to generate a single file.'''
     __tablename__ = "history"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -91,7 +99,7 @@ class GeneratedFile(Base):
     renamed: Mapped[bool] = mapped_column(Boolean, default=False)
 
     def __repr__(self) -> str:
-        return f"GeneratedFile(id={self.id!r}, output={self.output!r}, timestamp={self.timestamp!r})"
+        return f"GeneratedFile(id={self.id!r}, output={self.output!r}, timestamp={self.timestamp!r})"  # pylint: disable=line-too-long
 
 
 # Create engine for local sqlite database
@@ -108,23 +116,24 @@ engine = get_configured_engine()
 Base.metadata.create_all(engine)
 
 
-# Returns current timestamp in YYYY-MM-DD_HH:MM:SS.MS syntax
 def get_timestamp():
+    '''Returns current timestamp in YYYY-MM-DD_HH:MM:SS.MS syntax.'''
     return datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')
 
 
-# Takes filename, returns SELECT statement for entries with identical filename
 def get_filename_query(filename):
+    '''Takes filename, returns SELECT statement for entries with identical filename.'''
     return select(GeneratedFile).where(GeneratedFile.output == filename)
 
 
-# Takes filename, returns ORM entry
 def get_orm_entry(filename):
+    '''Takes existing clip filename, returns ORM entry.'''
     with Session(engine) as session:
         return session.scalar(get_filename_query(filename))
 
 
-def log_generated_file(source, start_time, duration, filename, show_name, episode_name):
+def log_generated_file(source, start_time, duration, filename, show_name, episode_name):  # pylint: disable=too-many-arguments
+    '''Takes parameters used to generate clip, logs ORM entry to database.'''
     with Session(engine) as session:
         session.add(GeneratedFile(
             source=source,
@@ -139,8 +148,9 @@ def log_generated_file(source, start_time, duration, filename, show_name, episod
         session.commit()
 
 
-# Returns list of (timestamp, filename) tuples for every file in database
 def load_history_json():
+    '''Returns list of (timestamp, filename) tuples for every file in database.'''
+
     # Query output filename and timestamp columns
     with Session(engine) as session:
         stmt = select(
@@ -156,9 +166,11 @@ def load_history_json():
     return history
 
 
-# Takes search_string, returns list of (timestamp, filename) tuples for each
-# entry whose output filename, show_name, or episode_name contain search_string
 def load_history_search_results(search_string):
+    '''Takes search_string, returns list of (timestamp, filename) tuples for
+    entries with filename, show_name, or episode_name containing search_string.
+    '''
+
     # Query output filename and timestamp columns
     with Session(engine) as session:
         stmt = select(
@@ -180,11 +192,17 @@ def load_history_search_results(search_string):
     return history
 
 
-# Takes existing filename and new name, updates in database and renames on disk
 def rename_entry(old, new):
+    '''Takes existing clip filename and new name, updates in database and
+    renames file on disk.
+    '''
+
     # If file exists on disk, rename
     if xbmcvfs.exists(os.path.join(output_path, old)):
-        xbmcvfs.rename(os.path.join(output_path, old), os.path.join(output_path, new))
+        xbmcvfs.rename(
+            os.path.join(output_path, old),
+            os.path.join(output_path, new)
+        )
 
     # Rename in database
     with Session(engine) as session:
@@ -194,8 +212,9 @@ def rename_entry(old, new):
         session.commit()
 
 
-# Takes output filename, deletes from database and disk
 def delete_entry(filename):
+    '''Takes clip filename, deletes from database and disk.'''
+
     # Delete from database
     with Session(engine) as session:
         entry = session.scalar(get_filename_query(filename))
@@ -207,16 +226,17 @@ def delete_entry(filename):
         xbmcvfs.delete(os.path.join(output_path, filename))
 
 
-# Takes filename, returns True if already exists in database
 def is_duplicate(filename):
+    '''Takes clip filename, returns True if it already exists in database.'''
     with Session(engine) as session:
         if session.scalar(get_filename_query(filename)):
             return True
     return False
 
 
-# Takes days (int), returns all ORM objects older than days
 def get_older_than(days):
+    '''Takes days (int), returns all ORM objects older than days.'''
+
     # Get datetime object of cutoff date, convert to string
     cutoff = datetime.datetime.today() - datetime.timedelta(days=days)
     cutoff = cutoff.strftime('%Y-%m-%d_%H:%M:%S.%f')
@@ -235,9 +255,11 @@ def get_older_than(days):
     return results
 
 
-# Takes list of ORM objects, deletes all from db
-# Optional bool arg prevents user-renamed files from being deleted
 def bulk_delete(entries, keep_renamed=False):
+    '''Takes list of ORM objects, deletes all from database and disk.
+    Optional bool arg prevents user-renamed files from being deleted.
+    '''
+
     # Track number of deleted files
     deleted = 0
 
@@ -265,8 +287,12 @@ def bulk_delete(entries, keep_renamed=False):
     xbmc.log(f"Autodelete complete, deleted {deleted} clips", xbmc.LOGINFO)
 
 
-# Called during server startup if autodelete option is enabled
 def autodelete():
+    '''Finds clips older than "delete_after_days" setting, deletes from disk
+    and database. Called during server startup if autodelete option is enabled.
+    Skips user-renamed files if "keep_renamed_files" setting is True.
+    '''
+
     # Read user settings (number of days, whether to keep renamed files)
     days = int(xbmcaddon.Addon().getSetting('delete_after_days'))
 

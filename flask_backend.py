@@ -1,17 +1,21 @@
+'''Flask webapp with endpoints to serve webapp, get information about currently
+playing media, record clips, download and rename clips, etc.
+'''
+
 import os
 import time
-import xbmc
 import string
-import ffmpeg
 import random
 import socket
+import threading
+from socketserver import ThreadingMixIn
+from wsgiref.simple_server import make_server, WSGIServer
+import xbmc
+import ffmpeg
 import xbmcgui
 import segno
 import xbmcaddon
-import threading
-from socketserver import ThreadingMixIn
 from sqlalchemy.exc import OperationalError
-from wsgiref.simple_server import make_server, WSGIServer
 from flask import Flask, request, render_template, jsonify, send_from_directory
 from paths import output_path, qr_path
 from kodi_gui import address_unavailable_error, generate_notification, show_notification
@@ -30,28 +34,30 @@ from database import (
 # Read currently-playing info
 player = xbmc.Player()
 
-
+# Serve contents of node_modules as static files
 app = Flask(__name__, static_url_path='', static_folder='node_modules')
 
 # Disable template caching TODO remove in prod
 app.jinja_env.cache = {}
 
 
-# Multi-threaded WSGIServer
 class ThreadedWSGIServer(ThreadingMixIn, WSGIServer):
-    pass
+    '''Multi-threaded WSGIServer.'''
 
 
-# Takes host and port, returns True if available, False if in use
 def address_available(host, port):
+    '''Takes host and port, returns True if available, False if in use.'''
     xbmc.log(f"Checking {host}:{port} availablility...", xbmc.LOGINFO)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return not s.connect_ex((host, port)) == 0
 
 
-# Takes host and port, check if available every 5 seconds, return True when available
-# If timeout (seconds) given returns False after timeout seconds
 def wait_for_address_release(host, port, timeout=None):
+    '''Takes host and port, checks if available every 5 seconds, returns True
+    when available. If timeout arg is passed returns False if still unavailable
+    after timeout seconds.
+    '''
+
     start_time = time.time()
     while not address_available(host, port):
         show_notification(
@@ -70,9 +76,11 @@ def wait_for_address_release(host, port, timeout=None):
     return True
 
 
-# Starts flask server, returns server object so it can be stopped later
-# Optional timeout arg determines how many seconds to wait if address unavailable
 def run_server(timeout=120):
+    '''Starts flask server, returns server object so it can be stopped later.
+    Optional timeout arg determines how many seconds to wait if address unavailable.
+    '''
+
     # Read address from settings.xml
     # Reinstantiate Addon() to avoid caching issue
     host = xbmcaddon.Addon().getSetting('flask_host')
@@ -104,39 +112,47 @@ def run_server(timeout=120):
     return httpd
 
 
-# Takes IP and port, creates QR code link, writes PNG to userdata dir
 def generate_qr_code_link(ip, port):
+    '''Takes IP and port, creates QR code link, writes PNG to userdata dir.'''
     qr = segno.make(f"http://{ip}:{port}")
     qr.save(qr_path, scale=8, border=1)
 
 
-# Serve non-node_modules static files
 # TODO remove in prod
 @app.get("/static/<path:filename>")
 def static_serve(filename):
+    '''Serves javascript static files used by frontend.'''
     return send_from_directory('static', filename)
 
 
 @app.get("/")
 def serve():
+    '''Serves webapp.'''
     return render_template('index.html')
 
 
 @app.get("/get_playtime")
 def get_playtime():
+    '''Returns JSON with current timestamp in playing media. Called when user
+    presses record button to get clip start time.
+    '''
     try:
         playtime = player.getTime()
-        return jsonify(playtime)
+        return jsonify({'playtime': playtime})
     except RuntimeError:
-        return jsonify('Nothing playing'), 500
+        return jsonify({'error': 'Nothing playing'}), 500
 
 
 @app.get("/get_playing_now")
 def get_playing_now():
+    '''Returns JSON with title of currently playing media and sub-title (show,
+    season and episode number if playing TV show, empty string if movie).
+    Used to populate playing now div above record button on frontend.
+    '''
     try:
         video_info_tag = player.getVideoInfoTag()
 
-        # TV shows: add subext with show name + season and episode numbers
+        # TV shows: add subtext with show name + season and episode numbers
         if video_info_tag.getMediaType() == "episode":
             show = video_info_tag.getTVShowTitle()
             episode_number = video_info_tag.getEpisode()
@@ -157,6 +173,9 @@ def get_playing_now():
 
 @app.post("/submit")
 def submit():
+    '''Receives JSON payload when user releases record button. Generates
+    requested MP4 and returns JSON with filename key.
+    '''
     try:
         # Get stop time immediately
         stop_time = player.getTime()
@@ -166,7 +185,10 @@ def submit():
         duration = stop_time - float(data["startTime"])
 
         # Generate random 16 char string
-        filename = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
+        filename = ''.join(
+            random.choice(string.ascii_letters + string.digits)
+            for _ in range(16)
+        )
 
         # Get show and episode names for history search
         video_info_tag = player.getVideoInfoTag()
@@ -176,10 +198,17 @@ def submit():
         source = player.getPlayingFile()
 
         # Generate, write params to database and return filename if successful
-        if gen_mp4(source, data["startTime"], str(duration), filename, show_name, episode_name):
-            log_generated_file(source, data["startTime"], str(duration), filename, show_name, episode_name)
+        if gen_mp4(source, data["startTime"], str(duration), filename):
+            log_generated_file(
+                source,
+                data["startTime"],
+                str(duration),
+                filename,
+                show_name,
+                episode_name
+            )
             generate_notification()
-            return jsonify(f'{filename}.mp4')
+            return jsonify({'filename': f'{filename}.mp4'})
 
     except RuntimeError as e:
         xbmc.log("Failed to generate file due to Kodi RuntimeError:", xbmc.LOGERROR)
@@ -194,18 +223,22 @@ def submit():
 
 @app.post("/regenerate")
 def regenerate():
+    '''Takes JSON with filename of clip deleted from disk that still exists in
+    database. Uses source file path, start timestamp, duration, and output
+    filename logged in database to regenerate clip, returns JSON with filename.
+    '''
     try:
         # Read filename from post body, get ORM entry from database
-        filename = request.get_json()
-        xbmc.log(f"Regenerating {filename}", xbmc.LOGINFO)
-        entry = get_orm_entry(filename)
+        data = request.get_json()
+        xbmc.log(f"Regenerating {data['filename']}", xbmc.LOGINFO)
+        entry = get_orm_entry(data['filename'])
 
         # Prevent double extension
-        output = filename.replace('.mp4', '')
+        output = data['filename'].replace('.mp4', '')
 
         # Regenerate with params from database, return filename if successful
-        if gen_mp4(entry.source, entry.start_time, entry.duration, output, entry.show_name, entry.episode_name):
-            return jsonify(f'{filename}.mp4')
+        if gen_mp4(entry.source, entry.start_time, entry.duration, output):
+            return jsonify({'filename': f"{data['filename']}.mp4"})
 
     except OperationalError as e:
         xbmc.log("Failed to regenerate file due to SQL error:", xbmc.LOGERROR)
@@ -214,13 +247,17 @@ def regenerate():
     return jsonify({'error': 'Unable to generate file, see Kodi logs for details'}), 500
 
 
-# Return bit/s calculated from user-configured quality (MB per minute)
 def get_bitrate():
+    '''Returns bit/s calculated from user-configured quality (MB per minute).'''
     mb_per_min = int(xbmcaddon.Addon().getSetting('mb_per_min'))
     return int(mb_per_min * 1024 * 1024 * 8 / 60)
 
 
-def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
+def gen_mp4(source, start_time, duration, filename):
+    '''Takes source file path, start timestamp, duration, and output filename.
+    Generates MP4, writes to disk and database.
+    Returns True if generated successfully, False if error.
+    '''
     try:
         # Get target bitrate from quality setting, input file original bitrate
         bitrate = get_bitrate()
@@ -230,7 +267,10 @@ def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
         bitrate = min(bitrate, original_bitrate)
 
         xbmc.log(f"Generating clip of {source}", level=xbmc.LOGINFO)
-        xbmc.log(f"Start time = {start_time}, duration = {duration}, output file = {filename}", level=xbmc.LOGINFO)
+        xbmc.log(
+            f"Start time = {start_time}, duration = {duration}, output file = {filename}",
+            level=xbmc.LOGINFO
+        )
         # Create MP4
         ffmpeg.input(
             source
@@ -255,32 +295,43 @@ def gen_mp4(source, start_time, duration, filename, show_name, episode_name):
 
 @app.get('/download/<filename>')
 def download(filename):
+    '''Serves existing MP4 clip requested in URL path.'''
     return send_from_directory(output_path, filename, as_attachment=True)
 
 
 @app.get('/get_history')
 def get_history():
+    '''Returns JSON with existing clips, used to populate history menu.'''
     return jsonify(load_history_json())
 
 
 @app.post('/search_history')
 def search_history():
-    search_string = request.get_json()
-    return jsonify(load_history_search_results(search_string))
+    '''Takes JSON with search string in query attribute, returns JSON with all
+    entries with parameters that contain query.
+    '''
+    data = request.get_json()
+    return jsonify(load_history_search_results(data['query']))
 
 
 @app.post('/delete')
 def delete():
-    filename = request.get_json()
+    '''Takes JSON payload containing existing clip filename, deletes from
+    database and disk.
+    '''
+    data = request.get_json()
 
     # Delete from disk and database
-    delete_entry(filename)
-
-    return (f"{filename} deleted", 200)
+    delete_entry(data['filename'])
+    return jsonify({'deleted': data['filename']})
 
 
 @app.post('/rename')
 def rename():
+    '''Takes JSON payload with "old" and "new" keys.
+    Finds database entry with name matching "old" and renames to "new".
+    '''
+
     # Parse old and new filename from payload
     data = request.get_json()
     old = data['old']

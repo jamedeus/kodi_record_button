@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 
+'''Development script, sends API calls to Kodi to disables addon and re-enable
+100ms later. Used to detect changes when editing files directly in ~/.kodi.
+Not included in packaged zip.
+'''
+
+# pylint: disable=duplicate-code
+
+import os
 import json
 import time
 import requests
 
 
-# Takes bool, enables or disables addon
 def set_enabled_state(state):
+    '''Takes bool, sends API call to enable addon if True, disable if False.'''
     command = {
         "jsonrpc": "2.0",
         "method": "Addons.SetAddonEnabled",
@@ -18,9 +26,10 @@ def set_enabled_state(state):
     }
     try:
         requests.post(
-            'http://192.168.1.216:8998/jsonrpc?request',
+            f"{os.environ['KODI_JSON_RPC_URL']}?request",
             headers={'Content-Type': 'application/json'},
-            data=json.dumps(command)
+            data=json.dumps(command),
+            timeout=2
         )
     except requests.exceptions.ConnectionError:
         print("Connection error when exiting Kodi")

@@ -1,8 +1,10 @@
+# pylint: disable=line-too-long, missing-module-docstring, missing-function-docstring
+
 import os
 import datetime
 import unittest
-from sqlalchemy.orm import Session
 from unittest.mock import patch, MagicMock
+from sqlalchemy.orm import Session
 import mock_kodi_modules
 from paths import database_path
 from database import (
@@ -30,14 +32,15 @@ class TestDatabaseBackends(unittest.TestCase):
         def mock_get_settings(setting):
             if setting == 'mysql_user':
                 return 'admin'
-            elif setting == 'mysql_pass':
+            if setting == 'mysql_pass':
                 return 'hunter2'
-            elif setting == 'mysql_host':
+            if setting == 'mysql_host':
                 return '127.0.0.1'
-            elif setting == 'mysql_port':
+            if setting == 'mysql_port':
                 return '8921'
-            elif setting == 'mysql_db':
+            if setting == 'mysql_db':
                 return 'mydb'
+            return None
 
         # Call get_mysql_url with mocked getSettings
         with patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:
@@ -55,11 +58,11 @@ class TestDatabaseBackends(unittest.TestCase):
 
     def test_create_engine(self):
         # Call with no mock, should return local sqlite database
-        engine = get_configured_engine()
-        self.assertEqual(engine.name, 'sqlite')
-        self.assertEqual(engine.driver, 'pysqlite')
-        self.assertEqual(str(engine.url), 'sqlite:///./history.db?timeout=5')
-        self.assertEqual(engine.url.database, database_path)
+        new_engine = get_configured_engine()
+        self.assertEqual(new_engine.name, 'sqlite')
+        self.assertEqual(new_engine.driver, 'pysqlite')
+        self.assertEqual(str(new_engine.url), 'sqlite:///./history.db?timeout=5')
+        self.assertEqual(new_engine.url.database, database_path)
 
     def test_create_engine_mysql(self):
         # Mock getSettings to return MySQL
@@ -70,7 +73,7 @@ class TestDatabaseBackends(unittest.TestCase):
 
             mock_addon.return_value.getSetting.return_value = 'MySQL'
             # Get engine, confirm correct methods called
-            engine = get_configured_engine()
+            get_configured_engine()
             self.assertTrue(mock_create_engine.called)
             self.assertTrue(mock_get_mysql_url.called)
 
@@ -111,7 +114,10 @@ class TestDatabase(unittest.TestCase):
     def test_get_filename_query(self):
         # Confirm method returns SELECT statement
         query = get_filename_query('test.mp4')
-        self.assertEqual(str(query), 'SELECT history.id, history.source, history.output, history.start_time, history.duration, history.timestamp, history.show_name, history.episode_name, history.renamed \nFROM history \nWHERE history.output = :output_1')
+        self.assertEqual(
+            str(query),
+            'SELECT history.id, history.source, history.output, history.start_time, history.duration, history.timestamp, history.show_name, history.episode_name, history.renamed \nFROM history \nWHERE history.output = :output_1'
+        )
 
     def test_get_orm_entry(self):
         # Create test entry
@@ -291,8 +297,9 @@ class TestDatabase(unittest.TestCase):
         def mock_get_settings(setting):
             if setting == 'delete_after_days':
                 return '5'
-            elif setting == 'keep_renamed_files':
+            if setting == 'keep_renamed_files':
                 return 'false'
+            return None
 
         # Call autodelete with mocked method
         with patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:
@@ -337,8 +344,9 @@ class TestDatabase(unittest.TestCase):
         def mock_get_settings(setting):
             if setting == 'delete_after_days':
                 return '5'
-            elif setting == 'keep_renamed_files':
+            if setting == 'keep_renamed_files':
                 return 'true'
+            return None
 
         # Call autodelete with mocked method
         with patch('xbmcaddon.Addon', return_value=MagicMock()) as mock_addon:

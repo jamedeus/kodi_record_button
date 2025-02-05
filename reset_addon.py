@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+'''Development script, sends Kodi API call to exit Kodi, uninstalls addon, and
+repackages addon in working directory. Not included in packaged zip.
+'''
+
+# pylint: disable=duplicate-code
+
 import os
 import json
 import shutil
@@ -9,8 +15,12 @@ from package_addon import zip_addon
 
 
 def uninstall_addon():
+    '''Remove Kodi Record Button addon from Kodi database and delete all files
+    from userdata directory (simulate uninstalling manually).
+    '''
+
     # Open addons database
-    conn = sqlite3.connect("/home/jamedeus/.kodi/userdata/Database/Addons33.db")
+    conn = sqlite3.connect(f"{os.environ['HOME']}/.kodi/userdata/Database/Addons33.db")
     c = conn.cursor()
 
     # Delete addon from database
@@ -20,25 +30,25 @@ def uninstall_addon():
 
     # Delete addon dir from Kodi user dir
     try:
-        shutil.rmtree("/home/jamedeus/.kodi/addons/script.record.button/")
+        shutil.rmtree(f"{os.environ['HOME']}/.kodi/addons/script.record.button/")
     except FileNotFoundError:
         pass
 
     # Delete addon_data dir (contains output clips, database)
     try:
-        shutil.rmtree("/home/jamedeus/.kodi/userdata/addon_data/script.record.button/")
+        shutil.rmtree(f"{os.environ['HOME']}/.kodi/userdata/addon_data/script.record.button/")
     except FileNotFoundError:
         pass
 
     # Clear kodi log
     try:
-        os.remove("/home/jamedeus/.kodi/temp/kodi.log")
+        os.remove(f"{os.environ['HOME']}/.kodi/temp/kodi.log")
     except FileNotFoundError:
         pass
 
 
-# Send API call to close Kodi
 def exit_kodi():
+    '''Sends API call to exit Kodi.'''
     command = {
         "jsonrpc": "2.0",
         "method": "Application.Quit",
@@ -46,9 +56,10 @@ def exit_kodi():
     }
     try:
         requests.post(
-            'http://192.168.1.216:8998/jsonrpc?request',
+            f"{os.environ['KODI_JSON_RPC_URL']}?request",
             headers={'Content-Type': 'application/json'},
-            data=json.dumps(command)
+            data=json.dumps(command),
+            timeout=2
         )
     except requests.exceptions.ConnectionError:
         print("Connection error when exiting Kodi")
