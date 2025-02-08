@@ -11,6 +11,7 @@ A notification is shown at startup with a QR code link to the webapp. Simply poi
 Previously-generated clips can be downloaded from the history menu at the bottom of the page.
 
 ![Demo](demo.mp4){height=400}
+<video src='https://github.com/user-attachments/assets/722f0c3c-48e1-487d-b5a3-05f5a5717e68'></video>
 
 ## Installation
 
