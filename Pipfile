@@ -9,7 +9,7 @@ flask = "~=2.3"
 segno = "~=1.6"
 werkzeug = "~=2.3"
 pymysql = "*"
-ffmpeg-python = {git = "git+https://github.com/kkroening/ffmpeg-python"}
+ffmpeg-python = {git = "git+https://github.com/kkroening/ffmpeg-python@df129c7"}
 
 [dev-packages]
 coverage = "~=7.2"

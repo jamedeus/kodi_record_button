@@ -78,24 +78,6 @@ def zip_addon():
             lib
         ], check=False)
 
-        # Clone ffmpeg-python repo and install (PyPi version outdated)
-        subprocess.run([
-            'git',
-            'clone',
-            'https://github.com/kkroening/ffmpeg-python.git'
-        ], check=False)
-        subprocess.run([
-            sys.executable,
-            '-m',
-            'pip',
-            'install',
-            '--upgrade',
-            './ffmpeg-python',
-            '--target',
-            lib
-        ], check=False)
-        shutil.rmtree('ffmpeg-python')
-
         # Add all dependencies to zip
         for root, _, files in os.walk(lib):
             for file in files:

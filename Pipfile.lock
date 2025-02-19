@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1c446513625bb1bf306baf2b9c53dcc7cdc17220aa22676c3cfd8115d459c8ca"
+            "sha256": "ca45b19d7894ce7957cd97bf35d767bfb58a64846c541d7f1981ca26ed5f47c4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -33,7 +33,7 @@
             "version": "==8.1.8"
         },
         "ffmpeg-python": {
-            "git": "git+https://github.com/kkroening/ffmpeg-python",
+            "git": "git+https://github.com/kkroening/ffmpeg-python@df129c7",
             "ref": "df129c7ba30aaa9ffffb81a48f53aa7253b0b4e6"
         },
         "flask": {
