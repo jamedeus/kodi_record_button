@@ -12,6 +12,8 @@ test:
     - nas
     - docker
   before_script:
+    - apt update
+    - apt install -y git
     - pip3 install pipenv
     - pipenv install --dev
   script:

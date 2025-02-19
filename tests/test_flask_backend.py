@@ -278,11 +278,13 @@ class TestEndpoints(TestCase):
 
         # Mock player object methods to return the mocked video_info_tag, current playtime
         # Mock gen_mp4 to return True, mock log_generated_file to confirm correct args
+        # Mock xbmc.executeJSONRPC (used to check audio track) to simulate first track
         with patch.object(player, 'getVideoInfoTag', return_value=mock_video_info_tag), \
              patch.object(player, 'getTime', return_value=123.4567), \
              patch.object(player, 'getPlayingFile', return_value='/path/to/source.mp4'), \
              patch('flask_backend.gen_mp4', return_value=True), \
-             patch('flask_backend.log_generated_file', MagicMock()) as mock_log_generated_file:
+             patch('flask_backend.log_generated_file', MagicMock()) as mock_log_generated_file, \
+             patch('flask_backend.xbmc.executeJSONRPC', return_value='{"result": {"currentaudiostream": {"index": 0}}}'):
 
             response = self.app.post(
                 '/submit',
@@ -299,6 +301,7 @@ class TestEndpoints(TestCase):
             self.assertTrue(mock_log_generated_file.called_once)
             mock_log_generated_file.assert_called_with(
                 '/path/to/source.mp4',
+                0,
                 '23.4567',
                 '100.0',
                 data['filename'].replace('.mp4', ''),
@@ -317,11 +320,13 @@ class TestEndpoints(TestCase):
 
         # Mock player object methods to return the mocked video_info_tag, current playtime
         # Mock gen_mp4 to return True, mock log_generated_file to simulate locked database
+        # Mock xbmc.executeJSONRPC (used to check audio track) to simulate first track
         with patch.object(player, 'getVideoInfoTag', return_value=mock_video_info_tag), \
              patch.object(player, 'getTime', return_value=123.4567), \
              patch.object(player, 'getPlayingFile', return_value='/path/to/source.mp4'), \
              patch('flask_backend.gen_mp4', return_value=True), \
-             patch('flask_backend.log_generated_file', side_effect=OperationalError("", "", "Database locked")):
+             patch('flask_backend.log_generated_file', side_effect=OperationalError("", "", "Database locked")), \
+             patch('flask_backend.xbmc.executeJSONRPC', return_value='{"result": {"currentaudiostream": {"index": 0}}}'):
 
             response = self.app.post(
                 '/submit',
@@ -523,6 +528,7 @@ class TestGenMp4(TestCase):
             # Call function with mock arguments, should return True
             self.assertTrue(gen_mp4(
                 '/path/to/source.mp4',
+                0,
                 '23.4567',
                 '100.0',
                 'output'
@@ -537,7 +543,8 @@ class TestGenMp4(TestCase):
                 vcodec="libx264",
                 b="1500000",
                 acodec="aac",
-                ac="2"
+                ac="2",
+                map=['0:v:0', '0:a:0']
             )
 
     def test_generate_error(self):
@@ -549,6 +556,7 @@ class TestGenMp4(TestCase):
             # Call function with mock arguments, should return False
             self.assertFalse(gen_mp4(
                 '/path/to/source.mp4',
+                0,
                 '23.4567',
                 '100.0',
                 'output'

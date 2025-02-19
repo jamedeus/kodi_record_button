@@ -116,7 +116,7 @@ class TestDatabase(unittest.TestCase):
         query = get_filename_query('test.mp4')
         self.assertEqual(
             str(query),
-            'SELECT history.id, history.source, history.output, history.start_time, history.duration, history.timestamp, history.show_name, history.episode_name, history.renamed \nFROM history \nWHERE history.output = :output_1'
+            'SELECT history.id, history.source, history.audio_track, history.output, history.start_time, history.duration, history.timestamp, history.show_name, history.episode_name, history.renamed \nFROM history \nWHERE history.output = :output_1'
         )
 
     def test_get_orm_entry(self):
@@ -125,6 +125,7 @@ class TestDatabase(unittest.TestCase):
             session.add(GeneratedFile(
                 id=1,
                 source='/path/to/source.mp4',
+                audio_track=0,
                 output='test.mp4',
                 start_time=23.4567,
                 duration=100.0,
@@ -145,6 +146,7 @@ class TestDatabase(unittest.TestCase):
         # Create test entry
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='logged',
@@ -161,6 +163,7 @@ class TestDatabase(unittest.TestCase):
         # Create test entry
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='test',
@@ -180,6 +183,7 @@ class TestDatabase(unittest.TestCase):
         # Create test entries with different filenames and show names
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='search for this',
@@ -188,6 +192,7 @@ class TestDatabase(unittest.TestCase):
         )
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='E7JI8wNLeCr7xopi',
@@ -196,6 +201,7 @@ class TestDatabase(unittest.TestCase):
         )
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='IylJp5LtP5A7D9Lb',
@@ -225,6 +231,7 @@ class TestDatabase(unittest.TestCase):
         # Create test file to rename
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='original',
@@ -242,6 +249,7 @@ class TestDatabase(unittest.TestCase):
         # Create test file to delete, confirm exists
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='delete me',
@@ -258,6 +266,7 @@ class TestDatabase(unittest.TestCase):
         # Create test file
         log_generated_file(
             source='/path/to/source.mp4',
+            audio_track=0,
             start_time=23.4567,
             duration=100.0,
             filename='exists',
@@ -280,6 +289,7 @@ class TestDatabase(unittest.TestCase):
 
                 session.add(GeneratedFile(
                     source='/path/to/source.mp4',
+                    audio_track=0,
                     output=f'autodelete{i}.mp4',
                     start_time=23.4567,
                     duration=100.0,
@@ -327,6 +337,7 @@ class TestDatabase(unittest.TestCase):
 
                 session.add(GeneratedFile(
                     source='/path/to/source.mp4',
+                    audio_track=0,
                     output=f'autodelete{i}.mp4',
                     start_time=23.4567,
                     duration=100.0,

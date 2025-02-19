@@ -4,6 +4,7 @@ playing media, record clips, download and rename clips, etc.
 
 import os
 import time
+import json
 import string
 import random
 import socket
@@ -197,10 +198,36 @@ def submit():
 
         source = player.getPlayingFile()
 
+        # Get current audio track using local API call (can't find xbmc method)
+        response = xbmc.executeJSONRPC(json.dumps({
+            "jsonrpc": "2.0",
+            "method": "Player.GetProperties",
+            "params": {
+                "playerid": 1,
+                "properties": ["currentaudiostream"]
+            },
+            "id": 1
+        }))
+        response_data = json.loads(response)
+        audio_stream_index = response_data.get(
+            'result', {}
+        ).get(
+            'currentaudiostream', {}
+        ).get(
+            'index', 0
+        )
+
         # Generate, write params to database and return filename if successful
-        if gen_mp4(source, data["startTime"], str(duration), filename):
+        if gen_mp4(
+            source,
+            audio_stream_index,
+            data["startTime"],
+            str(duration),
+            filename
+        ):
             log_generated_file(
                 source,
+                audio_stream_index,
                 data["startTime"],
                 str(duration),
                 filename,
@@ -237,7 +264,13 @@ def regenerate():
         output = data['filename'].replace('.mp4', '')
 
         # Regenerate with params from database, return filename if successful
-        if gen_mp4(entry.source, entry.start_time, entry.duration, output):
+        if gen_mp4(
+            entry.source,
+            entry.audio_track,
+            entry.start_time,
+            entry.duration,
+            output
+        ):
             return jsonify({'filename': f"{data['filename']}.mp4"})
 
     except OperationalError as e:
@@ -253,9 +286,9 @@ def get_bitrate():
     return int(mb_per_min * 1024 * 1024 * 8 / 60)
 
 
-def gen_mp4(source, start_time, duration, filename):
-    '''Takes source file path, start timestamp, duration, and output filename.
-    Generates MP4, writes to disk and database.
+def gen_mp4(source, audio_track, start_time, duration, filename):
+    '''Takes source file path, audtio track index, start timestamp, duration,
+    and output filename. Generates MP4, writes to disk and database.
     Returns True if generated successfully, False if error.
     '''
     try:
@@ -281,7 +314,8 @@ def gen_mp4(source, start_time, duration, filename):
             vcodec="libx264",
             b=str(bitrate),
             acodec="aac",
-            ac="2"
+            ac="2",
+            map=["0:v:0", f"0:a:{audio_track}"]
         ).run(overwrite_output=True, capture_stderr=True)
 
         return True

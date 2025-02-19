@@ -13,7 +13,7 @@ import xbmcaddon
 from sqlalchemy import URL
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
-from sqlalchemy import create_engine, Float, String, Boolean, select, desc, or_
+from sqlalchemy import create_engine, Integer, Float, String, Boolean, select, desc, or_
 from kodi_gui import autodelete_notification
 from paths import output_path, database_path
 
@@ -81,6 +81,9 @@ class GeneratedFile(Base):
     # Absolute path to source file
     source: Mapped[str] = mapped_column(String(999), nullable=False)
 
+    # Audio track index (int, usually 0)
+    audio_track: Mapped[int] = mapped_column(Integer, nullable=False)
+
     # Output filename, no path, max 50 characters
     output: Mapped[str] = mapped_column(String(50), nullable=False)
 
@@ -132,11 +135,20 @@ def get_orm_entry(filename):
         return session.scalar(get_filename_query(filename))
 
 
-def log_generated_file(source, start_time, duration, filename, show_name, episode_name):  # pylint: disable=too-many-arguments
+def log_generated_file(  # pylint: disable=too-many-arguments
+    source,
+    audio_track,
+    start_time,
+    duration,
+    filename,
+    show_name,
+    episode_name
+):
     '''Takes parameters used to generate clip, logs ORM entry to database.'''
     with Session(engine) as session:
         session.add(GeneratedFile(
             source=source,
+            audio_track=audio_track,
             output=f'{filename}.mp4',
             start_time=start_time,
             duration=duration,

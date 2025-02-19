@@ -4,3 +4,4 @@
 0.3 - Record button bug fixes
 0.4 - UI improvements
 0.5 - Improve code quality
+0.6 - Bug fix: Use same audio track as playing media
